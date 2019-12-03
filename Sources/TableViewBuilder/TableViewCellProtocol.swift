@@ -9,4 +9,11 @@ import UIKit
 
 public protocol TableViewCellProtocol {
     static func register(to tableView: UITableView)
+    func asTableViewCell() -> UITableViewCell?
+}
+
+public extension TableViewCellProtocol where Self: UITableViewCell {
+    func asTableViewCell() -> UITableViewCell? {
+        self
+    }
 }

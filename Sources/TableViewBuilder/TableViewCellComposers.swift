@@ -12,6 +12,10 @@ public enum TableViewCell {
         public static func register(to tableView: UITableView) {
 
         }
+
+        public func asTableViewCell() -> UITableViewCell? {
+            nil
+        }
     }
 
     public struct Pair<C0, C1>: TableViewCellProtocol where C0: TableViewCellProtocol, C1: TableViewCellProtocol {
@@ -22,6 +26,10 @@ public enum TableViewCell {
             C0.register(to: tableView)
             C1.register(to: tableView)
         }
+
+        public func asTableViewCell() -> UITableViewCell? {
+            c0.asTableViewCell() ?? c1.asTableViewCell()
+        }
     }
 
     public enum Either<C0, C1>: TableViewCellProtocol where C0: TableViewCellProtocol, C1: TableViewCellProtocol {
@@ -31,6 +39,13 @@ public enum TableViewCell {
         public static func register(to tableView: UITableView) {
             C0.register(to: tableView)
             C1.register(to: tableView)
+        }
+
+        public func asTableViewCell() -> UITableViewCell? {
+            switch self {
+            case .c0(let c0): return c0.asTableViewCell()
+            case .c1(let c1): return c1.asTableViewCell()
+            }
         }
     }
 }
