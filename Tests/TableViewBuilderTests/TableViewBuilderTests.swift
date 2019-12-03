@@ -30,11 +30,11 @@ final class TableViewBuilderTests: XCTestCase {
 
     override func setUp() {
         registeredClassNames = []
-        tableView = UITableView()
+        tableView = UITableView(frame: .init(x: 0, y: 0, width: 320, height: 320))
     }
 
     func testRegisterCells() {
-        let dataSource = tableView.generateDataSource(items: [1, 2, 3]) { (tableView, indexPath, item) in
+        _ = tableView.generateDataSource(items: [1, 2, 3]) { (tableView, indexPath, item) in
             if item % 2 == 0 {
                 MyTableViewCell0.dequeued(tableView: tableView, indexPath: indexPath)
             } else {
@@ -42,6 +42,28 @@ final class TableViewBuilderTests: XCTestCase {
             }
         }
         XCTAssertEqual(registeredClassNames, Set([MyTableViewCell0.className, MyTableViewCell1.className]))
+    }
+
+    func testReuseCells() {
+        let dataSource = tableView.generateDataSource(items: [1, 2, 3]) { (tableView, indexPath, item) in
+            if item % 2 == 0 {
+                MyTableViewCell0.dequeued(tableView: tableView, indexPath: indexPath)
+            } else {
+                MyTableViewCell1.dequeued(tableView: tableView, indexPath: indexPath)
+            }
+        }
+
+        let cell0a = tableView.cellForRow(at: IndexPath(row: 0, section: 0))
+        XCTAssertTrue(cell0a is MyTableViewCell1)
+        let cell1a = tableView.cellForRow(at: IndexPath(row: 1, section: 0))
+        XCTAssertTrue(cell1a is MyTableViewCell0)
+
+        dataSource.items = [0, 1, 2]
+
+        let cell0b = tableView.cellForRow(at: IndexPath(row: 0, section: 0))
+        XCTAssertTrue(cell0b is MyTableViewCell0)
+        let cell1b = tableView.cellForRow(at: IndexPath(row: 1, section: 0))
+        XCTAssertTrue(cell1b is MyTableViewCell1)
     }
 
     static var allTests = [
