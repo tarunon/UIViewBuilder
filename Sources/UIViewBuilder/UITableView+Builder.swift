@@ -38,18 +38,28 @@ public class TableViewDataSource<Context: AnyObject, Item>: NSObject, UITableVie
     }
 }
 
+class EmptyCell: UITableViewCell {
+    override var intrinsicContentSize: CGSize { .zero }
+}
+
 public extension UITableView {
-    func generateDataSource<Item, C: TableViewCellProtocol, Context>(items: [Item], context: Context, @TableViewBuilder _ tableViewCells: @escaping (Context, UITableView, IndexPath, Item) -> C) -> TableViewDataSource<Context, Item> {
-        defer {
-            reloadData()
-        }
+
+    static func defaultReload<Item>(tableView: UITableView, oldItems: [Item], newItems: [Item]) {
+        tableView.reloadData()
+    }
+
+    func generateDataSource<Item, C: TableViewCellProtocol, Context>(items: [Item], context: Context, reloadData: @escaping (UITableView, [Item], [Item]) -> () = defaultReload, @UIBuilder _ tableViewCells: @escaping (Context, UITableView, IndexPath, Item) -> C) -> TableViewDataSource<Context, Item> {
+        defer { self.reloadData() }
         C.register(to: self)
         let dataSource = TableViewDataSource(
             items: items,
             context: context,
-            reloadData: { [weak self] _, _ in self?.reloadData() },
+            reloadData: { [weak self] oldItems, newItems in
+                guard let self = self else { return }
+                reloadData(self, oldItems, newItems)
+            },
             cellForItem: { context, tableView, indexPath, item in
-                return tableViewCells(context, tableView, indexPath, item).asTableViewCell()!
+                return tableViewCells(context, tableView, indexPath, item).asTableViewCell() ?? EmptyCell()
         })
         self.dataSource = dataSource
         return dataSource

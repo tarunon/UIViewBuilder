@@ -1,5 +1,5 @@
 import XCTest
-import TableViewBuilder
+import UIViewBuilder
 import UIKit
 
 var registeredClassNames = Set<String>()
@@ -25,7 +25,7 @@ class MyTableViewCell0: UITableViewCell, TableViewCellProtocol {
 class MyTableViewCell1: UITableViewCell, TableViewCellProtocol {
 }
 
-final class TableViewBuilderTests: XCTestCase {
+final class TableViewTests: XCTestCase {
     var tableView: UITableView!
 
     override func setUp() {

@@ -8,16 +8,16 @@
 import UIKit
 
 @_functionBuilder
-public struct TableViewBuilder {
-    public typealias Empty = TableViewCell.Empty
-    public typealias Pair = TableViewCell.Pair
-    public typealias Either = TableViewCell.Either
+public struct UIBuilder {
+    public typealias Empty = UISet.Empty
+    public typealias Pair = UISet.Pair
+    public typealias Either = UISet.Either
 
     public static func buildBlock() -> Empty {
         .init()
     }
 
-    public static func buildBlock<C: TableViewCellProtocol>(_ c: C) -> C {
+    public static func buildBlock<C>(_ c: C) -> C {
         c
     }
 
@@ -38,7 +38,7 @@ public struct TableViewBuilder {
     }
 }
 
-public extension TableViewBuilder {
+public extension UIBuilder {
     static func buildBlock<C0, C1, C2>(_ c0: C0, _ c1: C1, _ c2: C2) -> Pair<Pair<C0, C1>, C2> {
         .init(c0: .init(c0: c0, c1: c1), c1: c2)
     }
