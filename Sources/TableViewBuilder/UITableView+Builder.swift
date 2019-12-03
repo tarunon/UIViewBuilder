@@ -7,18 +7,20 @@
 
 import UIKit
 
-public class TableViewDataSource<Item>: NSObject, UITableViewDataSource {
+public class TableViewDataSource<Context: AnyObject, Item>: NSObject, UITableViewDataSource {
     public var items: [Item] {
         didSet {
             reloadData(oldValue, self.items)
         }
     }
     var reloadData: ([Item], [Item]) -> ()
-    var cellForItem: (UITableView, IndexPath, Item) -> UITableViewCell
+    unowned var context: Context
+    var cellForItem: (Context, UITableView, IndexPath, Item) -> UITableViewCell
 
-    init(items: [Item], reloadData: @escaping ([Item], [Item]) -> (), cellForItem: @escaping (UITableView, IndexPath, Item) -> UITableViewCell) {
+    init(items: [Item], context: Context, reloadData: @escaping ([Item], [Item]) -> (), cellForItem: @escaping (Context, UITableView, IndexPath, Item) -> UITableViewCell) {
         self.items = items
         self.reloadData = reloadData
+        self.context = context
         self.cellForItem = cellForItem
         super.init()
     }
@@ -32,21 +34,22 @@ public class TableViewDataSource<Item>: NSObject, UITableViewDataSource {
     }
 
     public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        cellForItem(tableView, indexPath, items[indexPath.row])
+        cellForItem(context, tableView, indexPath, items[indexPath.row])
     }
 }
 
 public extension UITableView {
-    func generateDataSource<Item, C: TableViewCellProtocol>(items: [Item], @TableViewBuilder _ tableViewCells: @escaping (UITableView, IndexPath, Item) -> C) -> TableViewDataSource<Item> {
+    func generateDataSource<Item, C: TableViewCellProtocol, Context>(items: [Item], context: Context, @TableViewBuilder _ tableViewCells: @escaping (Context, UITableView, IndexPath, Item) -> C) -> TableViewDataSource<Context, Item> {
         defer {
             reloadData()
         }
         C.register(to: self)
         let dataSource = TableViewDataSource(
             items: items,
+            context: context,
             reloadData: { [weak self] _, _ in self?.reloadData() },
-            cellForItem: { tableView, indexPath, item in
-                return tableViewCells(tableView, indexPath, item).asTableViewCell()!
+            cellForItem: { context, tableView, indexPath, item in
+                return tableViewCells(context, tableView, indexPath, item).asTableViewCell()!
         })
         self.dataSource = dataSource
         return dataSource
