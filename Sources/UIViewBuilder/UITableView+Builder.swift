@@ -7,20 +7,18 @@
 
 import UIKit
 
-public class TableViewDataSource<Context: AnyObject, Item>: NSObject, UITableViewDataSource {
+public class TableViewDataSource<Item>: NSObject, UITableViewDataSource {
     public var items: [Item] {
         didSet {
             reloadData(oldValue, self.items)
         }
     }
     var reloadData: ([Item], [Item]) -> ()
-    unowned var context: Context
-    var cellForItem: (Context, UITableView, IndexPath, Item) -> UITableViewCell
+    var cellForItem: (UITableView, IndexPath, Item) -> UITableViewCell
 
-    init(items: [Item], context: Context, reloadData: @escaping ([Item], [Item]) -> (), cellForItem: @escaping (Context, UITableView, IndexPath, Item) -> UITableViewCell) {
+    init(items: [Item], reloadData: @escaping ([Item], [Item]) -> (), cellForItem: @escaping (UITableView, IndexPath, Item) -> UITableViewCell) {
         self.items = items
         self.reloadData = reloadData
-        self.context = context
         self.cellForItem = cellForItem
         super.init()
     }
@@ -34,7 +32,7 @@ public class TableViewDataSource<Context: AnyObject, Item>: NSObject, UITableVie
     }
 
     public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        cellForItem(context, tableView, indexPath, items[indexPath.row])
+        cellForItem(tableView, indexPath, items[indexPath.row])
     }
 }
 
@@ -48,18 +46,17 @@ public extension UITableView {
         tableView.reloadData()
     }
 
-    func generateDataSource<Item, C: TableViewCellProtocol, Context>(items: [Item], context: Context, reloadData: @escaping (UITableView, [Item], [Item]) -> () = defaultReload, @UIBuilder _ tableViewCells: @escaping (Context, UITableView, IndexPath, Item) -> C) -> TableViewDataSource<Context, Item> {
+    func generateDataSource<Item, C: TableViewCellProtocol>(items: [Item], reloadData: @escaping (UITableView, [Item], [Item]) -> () = defaultReload, @UIBuilder _ tableViewCells: @escaping (UITableView, IndexPath, Item) -> C) -> TableViewDataSource<Item> {
         defer { self.reloadData() }
         C.register(to: self)
         let dataSource = TableViewDataSource(
             items: items,
-            context: context,
             reloadData: { [weak self] oldItems, newItems in
                 guard let self = self else { return }
                 reloadData(self, oldItems, newItems)
             },
-            cellForItem: { context, tableView, indexPath, item in
-                return tableViewCells(context, tableView, indexPath, item).asTableViewCell() ?? EmptyCell()
+            cellForItem: { tableView, indexPath, item in
+                return tableViewCells(tableView, indexPath, item).asTableViewCell() ?? EmptyCell()
         })
         self.dataSource = dataSource
         return dataSource

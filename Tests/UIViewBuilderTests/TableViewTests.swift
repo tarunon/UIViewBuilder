@@ -34,7 +34,7 @@ final class TableViewTests: XCTestCase {
     }
 
     func testRegisterCells() {
-        _ = tableView.generateDataSource(items: [1, 2, 3], context: self) { (_, tableView, indexPath, item) in
+        _ = tableView.generateDataSource(items: [1, 2, 3]) { (tableView, indexPath, item) in
             if item % 2 == 0 {
                 MyTableViewCell0.dequeued(tableView: tableView, indexPath: indexPath)
             } else {
@@ -45,7 +45,7 @@ final class TableViewTests: XCTestCase {
     }
 
     func testReuseCells() {
-        let dataSource = tableView.generateDataSource(items: [1, 2, 3], context: self) { (_, tableView, indexPath, item) in
+        let dataSource = tableView.generateDataSource(items: [1, 2, 3]) { (tableView, indexPath, item) in
             if item % 2 == 0 {
                 MyTableViewCell0.dequeued(tableView: tableView, indexPath: indexPath)
             } else {
