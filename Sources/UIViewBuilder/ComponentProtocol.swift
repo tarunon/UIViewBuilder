@@ -37,6 +37,10 @@ public protocol UIViewRepresentable: _ComponentBase, Equatable {
     func update(native: View)
 }
 
+extension UIViewRepresentable {
+    public typealias NativeView = ViewWrapper<View>
+}
+
 extension UIViewRepresentable where NativeView == ViewWrapper<View> {
     @inline(__always)
     public func create(prev: NativeViewProtocol?) -> NativeView {

@@ -21,28 +21,34 @@ public struct VStackConfig: StackConfig {
     public static let axis: NSLayoutConstraint.Axis = .vertical
 }
 
-public class _StackView<Config: StackConfig, M: NativeViewProtocol>: NativeViewProtocol {
-    let creation: () -> M
-    lazy var component = self.creation()
+public class _StackView<Config: StackConfig, Native: NativeViewProtocol>: NativeViewProtocol {
+    let creation: (NativeViewProtocol?) -> Native
+    var component: Native!
     var stackView: UIStackView!
 
-    init(config: Config.Type, creation: @autoclosure @escaping () -> M) {
+    init(config: Config.Type, creation: @escaping (NativeViewProtocol?) -> Native, prev: NativeViewProtocol?) {
         self.creation = creation
+        self.prev = prev
     }
 
     public var prev: NativeViewProtocol?
 
     @inline(__always)
     public var length: Int {
-        component.length
+        stackView == nil ? component.length : 1
     }
 
     @inline(__always)
     public func mount(to stackView: UIStackView, parent: UIViewController) {
         if stackView.axis == Config.axis {
-            self.stackView = stackView
+            if component == nil {
+                component = creation(prev)
+            }
             component.mount(to: stackView, parent: parent)
         } else {
+            if component == nil {
+                component = creation(nil)
+            }
             if self.stackView == nil {
                 self.stackView = UIStackView()
                 self.stackView.axis = Config.axis
@@ -72,7 +78,7 @@ public protocol StackComponent: _ComponentBase {
 public extension StackComponent where NativeView == _StackView<Config, Body.NativeView> {
     @inline(__always)
     func create(prev: NativeViewProtocol?) -> NativeView {
-        _StackView(config: Config.self, creation: self.body.create(prev: prev))
+        _StackView(config: Config.self, creation: self.body.create, prev: prev)
     }
 
     @inline(__always)

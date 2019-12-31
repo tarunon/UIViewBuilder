@@ -58,17 +58,8 @@ public final class NativeEmpty: NativeViewProtocol {
 }
 
 public class NativePair<C0: NativeViewProtocol, C1: NativeViewProtocol>: NativeViewProtocol {
-    var c0: C0? {
-        didSet {
-            updateCount()
-        }
-    }
-
-    var c1: C1? {
-        didSet {
-            updateCount()
-        }
-    }
+    var c0: C0?
+    var c1: C1?
 
     public var prev: NativeViewProtocol?
 
@@ -76,14 +67,10 @@ public class NativePair<C0: NativeViewProtocol, C1: NativeViewProtocol>: NativeV
         self.c0 = c0
         self.c1 = c1
         self.prev = prev
-        self.length = (c0?.length ?? 0) + (c1?.length ?? 0)
     }
 
-    public var length: Int
-
-    @inline(__always)
-    func updateCount() {
-        length = (c0?.length ?? 0) + (c1?.length ?? 0)
+    public var length: Int {
+        (c0?.length ?? 0) + (c1?.length ?? 0)
     }
 
     @inline(__always)

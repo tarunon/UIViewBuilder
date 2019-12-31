@@ -67,6 +67,11 @@ public struct ForEach<Component: _ComponentBase>: _ComponentBase {
             .reduce(into: [Mount]()) { (result, value) in
                 let (component, (native, oldValue)) = value
                 result += component.update(native: native, oldValue: oldValue)
+                if oldValue == nil {
+                    result += [{ (stackView, parent) in
+                        native.mount(to: stackView, parent: parent)
+                    }]
+                }
         }
 
         if components.count < oldCount {
@@ -80,7 +85,7 @@ public struct ForEach<Component: _ComponentBase>: _ComponentBase {
 
         if native.list.count < components.count {
             let range = native.list.count..<components.count
-            return components[range].reduce(into: ([Mount]())) { (result, component) in
+            return mounts + components[range].reduce(into: ([Mount]())) { (result, component) in
                 let native0 = component.create(prev: native.list.last)
                 result.append({ (stackView, parent) in
                     native0.mount(to: stackView, parent: parent)

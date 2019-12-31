@@ -61,7 +61,7 @@ extension UIStackView {
 
 public class _HostingViewController<Component: _ComponentBase>: UIViewController {
     let creation: () -> Component
-    lazy var component = self.creation()
+    public lazy var component = self.creation()
     lazy var native = self.component.create(prev: nil)
     lazy var stackView = UIStackView()
 
@@ -86,7 +86,7 @@ public class _HostingViewController<Component: _ComponentBase>: UIViewController
 }
 
 public class HostingViewController<Component: _ComponentBase>: _HostingViewController<Component> {
-    override var component: Component {
+    public override var component: Component {
         didSet {
             self.component
                 .update(native: native, oldValue: oldValue)
