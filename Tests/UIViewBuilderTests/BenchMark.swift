@@ -37,7 +37,7 @@ class BenchMark: XCTestCase {
         let assets = Array(repeating: [
             Foo(array: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], flag: true, title: "abcde"),
             Foo(array: [6, 7, 8, 9, 10], flag: false, title: "edcba")
-        ], count: 1000).flatMap { $0 }
+        ], count: 10000).flatMap { $0 }
 
         let vc = HostingViewController(Foo(array: [], flag: true, title: ""))
 
@@ -48,8 +48,6 @@ class BenchMark: XCTestCase {
         measure {
             assets.forEach {
                 vc.component = $0
-                vc.view.setNeedsLayout()
-                vc.view.layoutIfNeeded()
             }
         }
     }
@@ -80,7 +78,7 @@ class BenchMark: XCTestCase {
         let assets2 = Array(repeating: [
             Foo2(array: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], flag: true, title: "abcde"),
             Foo2(array: [6, 7, 8, 9, 10], flag: false, title: "edcba")
-        ], count: 1000).flatMap { $0 }
+        ], count: 10000).flatMap { $0 }
 
         let vc2 = SwiftUI.UIHostingController(rootView: Foo2(array: [], flag: true, title: ""))
 
@@ -91,9 +89,6 @@ class BenchMark: XCTestCase {
         measure {
             assets2.forEach {
                 vc2.rootView = $0
-                // Note: if not layout every time, performance be as x200 time.
-                vc2.view.setNeedsLayout()
-                vc2.view.layoutIfNeeded()
             }
         }
     }

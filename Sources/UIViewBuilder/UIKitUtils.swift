@@ -60,10 +60,37 @@ extension UIStackView {
 
 
 public class _HostingViewController<Component: _ComponentBase>: UIViewController {
+    class View: UIView {
+        weak var parent: _HostingViewController?
+        lazy var stackView = UIStackView()
+        init(parent: _HostingViewController) {
+            self.parent = parent
+            super.init(frame: .zero)
+            stackView.axis = .vertical
+            addSubview(stackView)
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+
+        override func layoutSubviews() {
+            if let parent = parent {
+                parent.component.update(native: parent.native, oldValue: parent.oldComponent).forEach { f in
+                    f(stackView, parent)
+                }
+                parent.oldComponent = nil
+            }
+            super.layoutSubviews()
+        }
+    }
+    
     let creation: () -> Component
+    var oldComponent: Component?
     public lazy var component = self.creation()
     lazy var native = self.component.create(prev: nil)
-    lazy var stackView = UIStackView()
+    lazy var _view = View(parent: self)
 
     public init(_ component: @autoclosure @escaping () -> Component) {
         self.creation = component
@@ -75,24 +102,20 @@ public class _HostingViewController<Component: _ComponentBase>: UIViewController
     }
 
     public override func loadView() {
-        view = stackView
-        stackView.axis = .vertical
+        view = _view
     }
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        _ = native.mount(to: stackView, parent: self)
+        _ = native.mount(to: _view.stackView, parent: self)
     }
 }
 
 public class HostingViewController<Component: _ComponentBase>: _HostingViewController<Component> {
     public override var component: Component {
-        didSet {
-            self.component
-                .update(native: native, oldValue: oldValue)
-                .forEach { f in
-                    f(stackView, self)
-            }
+        willSet {
+            oldComponent = component
+            view.setNeedsLayout()
         }
     }
 }

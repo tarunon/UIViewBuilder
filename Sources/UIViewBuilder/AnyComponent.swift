@@ -110,7 +110,7 @@ public struct AnyComponent: _ComponentBase {
 
         @inlinable
         override func update(native: AnyNativeView, oldValue: AnyComponent.Base?) -> [Mount] {
-            body.update(native: (native.box as! AnyNativeView.Box<Body.NativeView>).body, oldValue: (oldValue as! Box).body)
+            body.update(native: (native.box as! AnyNativeView.Box<Body.NativeView>).body, oldValue: (oldValue as? Box)?.body)
         }
     }
 

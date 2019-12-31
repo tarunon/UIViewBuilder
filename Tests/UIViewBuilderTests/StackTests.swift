@@ -10,7 +10,7 @@ import UIViewBuilder
 
 extension HostingViewController {
     func visibleViews() -> [UIView] {
-        (view as! UIStackView).arrangedSubviews.filter { !$0.isHidden }
+        (view.subviews.first as! UIStackView).arrangedSubviews.filter { !$0.isHidden }
     }
 }
 
@@ -64,6 +64,9 @@ class StackTests: XCTestCase {
         }
 
         let vc = HostingViewController(component)
+
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
+
         XCTAssertEqual(
             vc.visibleViews().map { ($0 as! UILabel).text },
             fixture
@@ -72,13 +75,14 @@ class StackTests: XCTestCase {
         fixture = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
 
         vc.component = component
+        vc.view.layoutIfNeeded()
 
         XCTAssertEqual(
             vc.visibleViews().map { ($0 as! UILabel).text },
             fixture
         )
 
-        XCTAssertEqual(vc.view.subviews.count, 10)
+        XCTAssertEqual(vc.view.subviews.first?.subviews.count, 10)
     }
 
     func testEither() {
@@ -160,6 +164,8 @@ class StackTests: XCTestCase {
         }
 
         let vc = HostingViewController(component)
+        vc.view.layoutIfNeeded()
+
         XCTAssertEqual(
             vc.visibleViews().map { ($0 as! UILabel).text },
             ["0", "2", "4", "a", "6", "c", "8", "e"]
@@ -168,13 +174,14 @@ class StackTests: XCTestCase {
         fixture = [false, true, false, true, false, true, false, true, false, true]
 
         vc.component = component
+        vc.view.layoutIfNeeded()
 
         XCTAssertEqual(
             vc.visibleViews().map { ($0 as! UILabel).text },
             ["1", "3", "5", "b", "7", "d", "9"]
         )
 
-        XCTAssertEqual(vc.view.subviews.count, 15)
+        XCTAssertEqual(vc.view.subviews.first?.subviews.count, 15)
     }
 
     func testForEach() {
@@ -211,6 +218,8 @@ class StackTests: XCTestCase {
         }
 
         let vc = HostingViewController(component)
+        vc.view.layoutIfNeeded()
+
         XCTAssertEqual(
             vc.visibleViews().map { ($0 as! UILabel).text },
             fixture.flatMap { $0 }
@@ -219,6 +228,7 @@ class StackTests: XCTestCase {
         fixture = [["1", "2", "3", "4", "5", "6", "7"], ["a", "b", "c"], []]
 
         vc.component = component
+        vc.view.layoutIfNeeded()
 
         XCTAssertEqual(
             vc.visibleViews().map { ($0 as! UILabel).text },
@@ -228,13 +238,14 @@ class StackTests: XCTestCase {
         fixture = [[], ["a", "b", "c", "d", "e", "f", "g"], ["!", "@", "#"]]
 
         vc.component = component
+        vc.view.layoutIfNeeded()
 
         XCTAssertEqual(
             vc.visibleViews().map { ($0 as! UILabel).text },
             fixture.flatMap { $0 }
         )
 
-        XCTAssertEqual(vc.view.subviews.count, 17)
+        XCTAssertEqual(vc.view.subviews.first?.subviews.count, 17)
     }
 
     func testNested() {
@@ -277,6 +288,8 @@ class StackTests: XCTestCase {
         }
 
         let vc = HostingViewController(component)
+        vc.view.layoutIfNeeded()
+
         XCTAssertEqual(
             vc.visibleViews().map { "\(type(of: $0))" },
             ["UIStackView", "UILabel", "UILabel", "UILabel", "UIStackView"]
@@ -285,6 +298,7 @@ class StackTests: XCTestCase {
         fixture = [["1", "2"], [], ["!", "@", "#", "$", "%"]]
 
         vc.component = component
+        vc.view.layoutIfNeeded()
 
         XCTAssertEqual(
             vc.visibleViews().map { "\(type(of: $0))" },
@@ -294,6 +308,7 @@ class StackTests: XCTestCase {
         fixture = [[], ["a", "b", "c", "d", "e"], ["!", "@", "#", "$"]]
 
         vc.component = component
+        vc.view.layoutIfNeeded()
 
         XCTAssertEqual(
             vc.visibleViews().map { "\(type(of: $0))" },
