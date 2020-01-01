@@ -56,6 +56,32 @@ extension UIViewRepresentable where NativeView == ViewWrapper<View> {
     }
 }
 
+public protocol UIViewControllerRepresentable: _ComponentBase, Equatable {
+    associatedtype ViewController: UIViewController
+    associatedtype NativeView = ViewControllerWrapper<ViewController>
+    func create() -> ViewController
+    func update(native: ViewController)
+}
+
+extension UIViewControllerRepresentable {
+    public typealias NativeView = ViewControllerWrapper<ViewController>
+}
+
+extension UIViewControllerRepresentable where NativeView == ViewControllerWrapper<ViewController> {
+    @inline(__always)
+    public func create(prev: NativeViewProtocol?) -> NativeView {
+        ViewControllerWrapper(creation: create, prev: prev)
+    }
+
+    @inline(__always)
+    public func update(native: NativeView, oldValue: Self?) -> [Mount] {
+        if self != oldValue {
+            update(native: native.viewController)
+        }
+        return []
+    }
+}
+
 public protocol Component: _ComponentBase, Equatable {
     associatedtype Body: _ComponentBase
     associatedtype NativeView = Body.NativeView
