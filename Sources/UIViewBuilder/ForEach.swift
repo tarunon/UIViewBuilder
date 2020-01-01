@@ -8,19 +8,14 @@
 import UIKit
 
 public class NativeForEach<Native: NativeViewProtocol>: NativeViewProtocol {
-    var list: [Native] {
-        didSet {
-            length = list.map { $0.length }.reduce(0, +)
-        }
-    }
+    var list: [Native]
 
-    public var length: Int
+    public var length: Int { list.map { $0.length }.reduce(0, +) }
     public var prev: NativeViewProtocol?
 
     init(list: [Native], prev: NativeViewProtocol?) {
         self.list = list
         self.prev = prev
-        self.length = list.map { $0.length }.reduce(0, +)
     }
 
     @inline(__always)
@@ -38,7 +33,7 @@ public class NativeForEach<Native: NativeViewProtocol>: NativeViewProtocol {
     }
 }
 
-public struct ForEach<Component: _ComponentBase>: _ComponentBase {
+public struct ForEach<Component: _ComponentBase>: _ComponentBase where Component: Equatable {
     public typealias NativeView = NativeForEach<Component.NativeView>
     var components: [Component]
     public init<T>(_ elements: [T], _ f: (T) -> Component) {

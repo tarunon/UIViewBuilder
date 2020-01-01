@@ -181,7 +181,7 @@ class StackTests: XCTestCase {
             ["1", "3", "5", "b", "7", "d", "9"]
         )
 
-        XCTAssertEqual(vc.view.subviews.first?.subviews.count, 15)
+        XCTAssertEqual(vc.view.subviews.first?.subviews.count, 7)
     }
 
     func testForEach() {
@@ -245,7 +245,7 @@ class StackTests: XCTestCase {
             fixture.flatMap { $0 }
         )
 
-        XCTAssertEqual(vc.view.subviews.first?.subviews.count, 17)
+        XCTAssertEqual(vc.view.subviews.first?.subviews.count, 10)
     }
 
     func testNested() {

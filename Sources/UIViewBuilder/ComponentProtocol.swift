@@ -50,7 +50,7 @@ extension UIViewRepresentable where NativeView == ViewWrapper<View> {
     @inline(__always)
     public func update(native: NativeView, oldValue: Self?) -> [Mount] {
         if self != oldValue {
-            update(native: native.view!)
+            update(native: native.view)
         }
         return []
     }
@@ -83,7 +83,7 @@ extension Component where NativeView == Body.NativeView {
 
 public class ViewControllerWrapper<ViewController: UIViewController>: NativeViewProtocol {
     var creation: () -> ViewController
-    var viewController: ViewController?
+    lazy var viewController = self.creation()
     public var prev: NativeViewProtocol?
 
     init(creation: @escaping () -> ViewController, prev: NativeViewProtocol?) {
@@ -92,27 +92,22 @@ public class ViewControllerWrapper<ViewController: UIViewController>: NativeView
     }
 
     @inline(__always)
-    public var length: Int { 1 }
+    public var length: Int { viewController.view.superview == nil ? 0 : 1 }
 
     @inline(__always)
     public func mount(to stackView: UIStackView, parent: UIViewController) {
-        if let viewController = viewController {
-            viewController.view.isHidden = false
-        } else {
-            viewController = creation()
-            stackView.insertArrangedViewController(viewController!, at: offset, parentViewController: parent)
-        }
+        stackView.insertArrangedViewController(viewController, at: offset, parentViewController: parent)
     }
 
     @inline(__always)
     public func unmount(from stackView: UIStackView) {
-        viewController?.view.isHidden = true
+        stackView.removeArrangedViewController(viewController)
     }
 }
 
 public class ViewWrapper<View: UIView>: NativeViewProtocol {
     var creation: () -> View
-    var view: View?
+    lazy var view = self.creation()
     public var prev: NativeViewProtocol?
 
     init(creation: @escaping () -> View, prev: NativeViewProtocol?) {
@@ -121,20 +116,16 @@ public class ViewWrapper<View: UIView>: NativeViewProtocol {
     }
 
     @inline(__always)
-    public var length: Int { 1 }
+    public var length: Int { view.superview == nil ? 0 : 1 }
 
     @inline(__always)
     public func mount(to stackView: UIStackView, parent: UIViewController) {
-        if let view = view {
-            view.isHidden = false
-        } else {
-            view = creation()
-            stackView.insertArrangedSubview(view!, at: offset)
-        }
+        stackView.insertArrangedSubview(view, at: offset)
     }
 
     @inline(__always)
     public func unmount(from stackView: UIStackView) {
-        view?.isHidden = true
+        stackView.removeArrangedSubview(view)
+        view.removeFromSuperview()
     }
 }

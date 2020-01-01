@@ -35,7 +35,7 @@ public class _StackView<Config: StackConfig, Native: NativeViewProtocol>: Native
 
     @inline(__always)
     public var length: Int {
-        stackView == nil ? component.length : 1
+        stackView == nil ? component.length : stackView.superview == nil ? 0 : 1
     }
 
     @inline(__always)
@@ -63,7 +63,8 @@ public class _StackView<Config: StackConfig, Native: NativeViewProtocol>: Native
         if stackView.axis == Config.axis {
             component.unmount(from: stackView)
         } else {
-            self.stackView.isHidden = true
+            stackView.removeArrangedSubview(self.stackView)
+            self.stackView.removeFromSuperview()
         }
     }
 }
