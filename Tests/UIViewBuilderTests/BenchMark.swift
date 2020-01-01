@@ -39,7 +39,7 @@ class BenchMark: XCTestCase {
             Foo(array: [6, 7, 8, 9, 10], flag: false, title: "edcba")
         ], count: 10000).flatMap { $0 }
 
-        let vc = HostingViewController(Foo(array: [], flag: true, title: ""))
+        let vc = UIHostingController(Foo(array: [], flag: true, title: ""))
 
         let window = UIWindow(frame: UIScreen.main.bounds)
         window.rootViewController = vc

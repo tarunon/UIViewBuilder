@@ -8,7 +8,7 @@
 import XCTest
 import UIViewBuilder
 
-extension HostingViewController {
+extension UIHostingController {
     func visibleViews() -> [UIView] {
         (view.subviews.first as! UIStackView).arrangedSubviews.filter { !$0.isHidden }
     }
@@ -63,7 +63,7 @@ class StackTests: XCTestCase {
             )
         }
 
-        let vc = HostingViewController(component)
+        let vc = UIHostingController(component)
 
         RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
 
@@ -163,7 +163,7 @@ class StackTests: XCTestCase {
             )
         }
 
-        let vc = HostingViewController(component)
+        let vc = UIHostingController(component)
         vc.view.layoutIfNeeded()
 
         XCTAssertEqual(
@@ -217,7 +217,7 @@ class StackTests: XCTestCase {
             )
         }
 
-        let vc = HostingViewController(component)
+        let vc = UIHostingController(component)
         vc.view.layoutIfNeeded()
 
         XCTAssertEqual(
@@ -287,7 +287,7 @@ class StackTests: XCTestCase {
             )
         }
 
-        let vc = HostingViewController(component)
+        let vc = UIHostingController(component)
         vc.view.layoutIfNeeded()
 
         XCTAssertEqual(
@@ -343,7 +343,7 @@ class StackTests: XCTestCase {
             )
         }
 
-        let vc = HostingViewController(component)
+        let vc = UIHostingController(component)
         vc.view.layoutIfNeeded()
 
         XCTAssertEqual(

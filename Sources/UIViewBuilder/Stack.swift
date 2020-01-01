@@ -5,8 +5,6 @@
 //  Created by tarunon on 2019/12/30.
 //
 
-#if os(iOS) || os(tvOS) || os(watchOS)
-
 import UIKit
 
 public protocol StackConfig {
@@ -110,4 +108,27 @@ public struct VStack<Body: _ComponentBase>: StackComponent {
     }
 }
 
-#endif
+extension UIStackView {
+    func addArrangedViewController(_ viewController: UIViewController, parentViewController: UIViewController) {
+        viewController.view.translatesAutoresizingMaskIntoConstraints = false
+        parentViewController.addChild(viewController)
+        addArrangedSubview(viewController.view)
+        viewController.didMove(toParent: parentViewController)
+    }
+
+    func insertArrangedViewController(_ viewController: UIViewController, at stackIndex: Int, parentViewController: UIViewController) {
+        viewController.view.translatesAutoresizingMaskIntoConstraints = false
+        parentViewController.addChild(viewController)
+        insertArrangedSubview(viewController.view, at: stackIndex)
+        viewController.didMove(toParent: parentViewController)
+    }
+
+    func removeArrangedViewController(_ viewController: UIViewController) {
+        viewController.willMove(toParent: nil)
+        removeArrangedSubview(viewController.view)
+        viewController.view.removeFromSuperview()
+        viewController.removeFromParent()
+    }
+}
+
+
