@@ -5,8 +5,6 @@
 //  Created by tarunon on 2019/12/30.
 //
 
-#if os(iOS) || os(tvOS) || os(watchOS)
-
 import UIKit
 
 public final class AnyViewController<View: UIView>: UIViewController {
@@ -76,7 +74,7 @@ public class _HostingViewController<Component: _ComponentBase>: UIViewController
         }
 
         override func layoutSubviews() {
-            if let parent = parent {
+            if let parent = parent, parent.oldComponent != nil {
                 parent.component.update(native: parent.native, oldValue: parent.oldComponent).forEach { f in
                     f(stackView, parent)
                 }
@@ -119,6 +117,3 @@ public class HostingViewController<Component: _ComponentBase>: _HostingViewContr
         }
     }
 }
-
-#endif
-

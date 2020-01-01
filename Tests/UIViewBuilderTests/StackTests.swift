@@ -315,5 +315,61 @@ class StackTests: XCTestCase {
             ["UIStackView", "UILabel", "UILabel", "UILabel", "UILabel", "UILabel", "UIStackView"]
         )
     }
+
+    func testForEachReuseInEither() {
+        struct TestComponent: Component {
+            var condition0: Bool
+            var array0: [String]
+
+            var body: AnyComponent {
+                AnyComponent {
+                    VStack {
+                        if condition0 {
+                            ForEach(array0) {
+                                Label(text: $0)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        var fixture = (true, ["1", "2", "3"])
+
+        var component: TestComponent {
+            TestComponent(
+                condition0: fixture.0,
+                array0: fixture.1
+            )
+        }
+
+        let vc = HostingViewController(component)
+        vc.view.layoutIfNeeded()
+
+        XCTAssertEqual(
+            vc.visibleViews().map { ($0 as! UILabel).text },
+            fixture.1
+        )
+
+        fixture = (false, ["1", "2", "3", "4"])
+
+        vc.component = component
+        vc.view.layoutIfNeeded()
+
+        XCTAssertEqual(
+            vc.visibleViews().map { ($0 as! UILabel).text },
+            []
+        )
+
+        fixture = (true, ["1", "2", "3", "4", "5"])
+
+        vc.component = component
+        vc.view.layoutIfNeeded()
+
+        XCTAssertEqual(
+            vc.visibleViews().map { ($0 as! UILabel).text },
+            fixture.1
+        )
+    }
 }
 

@@ -7,8 +7,8 @@
 
 import UIKit
 
-public protocol NativeViewProtocol {
-    var prev: NativeViewProtocol? { get }
+public protocol NativeViewProtocol: class {
+    var prev: NativeViewProtocol? { get set }
     var offset: Int { get }
     var length: Int { get }
     func mount(to stackView: UIStackView, parent: UIViewController)

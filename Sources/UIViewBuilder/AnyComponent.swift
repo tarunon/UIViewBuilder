@@ -7,11 +7,16 @@
 
 import UIKit
 
-public struct AnyNativeView: NativeViewProtocol {
+public final class AnyNativeView: NativeViewProtocol {
     class Base: NativeViewProtocol {
         @inlinable
         var prev: NativeViewProtocol? {
-            fatalError()
+            get {
+                fatalError()
+            }
+            set {
+                fatalError()
+            }
         }
 
         @inlinable
@@ -30,7 +35,7 @@ public struct AnyNativeView: NativeViewProtocol {
         }
     }
 
-    class Box<Body: NativeViewProtocol>: Base {
+    final class Box<Body: NativeViewProtocol>: Base {
         var body: Body
         init(body: Body) {
             self.body = body
@@ -38,7 +43,12 @@ public struct AnyNativeView: NativeViewProtocol {
 
         @inlinable
         override var prev: NativeViewProtocol? {
-            body.prev
+            get {
+                body.prev
+            }
+            set {
+                body.prev = newValue
+            }
         }
 
         @inlinable
@@ -64,7 +74,12 @@ public struct AnyNativeView: NativeViewProtocol {
 
     @inline(__always)
     public var prev: NativeViewProtocol? {
-        box.prev
+        get {
+            box.prev
+        }
+        set {
+            box.prev = newValue
+        }
     }
 
     @inline(__always)
@@ -97,7 +112,7 @@ public struct AnyComponent: _ComponentBase {
         }
     }
 
-    class Box<Body: _ComponentBase>: Base {
+    final class Box<Body: _ComponentBase>: Base {
         var body: Body
         init(body: Body) {
             self.body = body
