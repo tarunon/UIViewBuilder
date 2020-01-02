@@ -14,10 +14,12 @@ public protocol ComponentBase {
 }
 
 extension ComponentBase {
+    @inline(__always)
     func create(prev: NativeViewProtocol?) -> NativeViewProtocol {
         asAnyComponent().create(prev: prev)
     }
 
+    @inline(__always)
     func update(native: NativeViewProtocol, oldValue: Self?) -> [Mount] {
         asAnyComponent().update(native: native as! AnyNativeView, oldValue: oldValue?.asAnyComponent())
     }

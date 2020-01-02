@@ -16,6 +16,7 @@ protocol NativeViewProtocol: class {
 }
 
 extension NativeViewProtocol {
+    @inline(__always)
     var offset: Int {
         prev.map { $0.offset + $0.length } ?? 0
     }

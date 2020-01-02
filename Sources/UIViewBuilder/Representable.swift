@@ -14,6 +14,7 @@ public protocol UIViewRepresentable: ComponentBase, Equatable {
 }
 
 extension UIViewRepresentable {
+    @inline(__always)
     public func asAnyComponent() -> AnyComponent {
         AnyComponent(
             create: { prev in
@@ -62,6 +63,7 @@ public protocol UIViewControllerRepresentable: ComponentBase, Equatable {
 }
 
 extension UIViewControllerRepresentable {
+    @inline(__always)
     public func asAnyComponent() -> AnyComponent {
         AnyComponent(
             create: { prev in

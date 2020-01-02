@@ -69,6 +69,7 @@ class NativePair: NativeViewProtocol {
         self.prev = prev
     }
 
+    @inline(__always)
     var length: Int {
         (c0?.length ?? 0) + (c1?.length ?? 0)
     }

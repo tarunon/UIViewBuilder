@@ -64,10 +64,12 @@ public struct AnyComponent: ComponentBase, _Component {
     }
 
     final class GenericBox<Body: ComponentBase & _Component>: Box<Body> {
+        @inline(__always)
         override func create(prev: NativeViewProtocol?) -> AnyNativeView {
             AnyNativeView(body: body.create(prev: prev))
         }
 
+        @inline(__always)
         override func update(native: AnyNativeView, oldValue: Base?) -> [Mount] {
             body.update(native: native.body as! Body.NativeView, oldValue: oldValue?.as(Body.self))
         }
@@ -83,10 +85,12 @@ public struct AnyComponent: ComponentBase, _Component {
             super.init(body: body)
         }
 
+        @inline(__always)
         override func create(prev: NativeViewProtocol?) -> AnyNativeView {
             _create(prev)
         }
 
+        @inline(__always)
         override func update(native: AnyNativeView, oldValue: Base?) -> [Mount] {
             _update(native, oldValue.map(AnyComponent.init))
         }
@@ -110,10 +114,12 @@ public struct AnyComponent: ComponentBase, _Component {
         self.box = ClosureBox(create: create, update: update, body: body)
     }
 
+    @inline(__always)
     func create(prev: NativeViewProtocol?) -> AnyNativeView {
         box.create(prev: prev)
     }
 
+    @inline(__always)
     func update(native: AnyNativeView, oldValue: AnyComponent?) -> [Mount] {
         box.update(native: native, oldValue: oldValue?.box)
     }
