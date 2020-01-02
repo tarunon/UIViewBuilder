@@ -74,17 +74,24 @@ class NativeForEach: NativeViewProtocol {
     }
 }
 
-public struct ForEach<Component: ComponentBase>: ComponentBase, _Component where Component: Equatable {
+public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID: Equatable>: ComponentBase, _Component where Data.Element: Equatable, Data.Index == Int {
     typealias NativeView = NativeForEach
-    var components: [Component]
-    public init<T>(_ elements: [T], _ f: (T) -> Component) {
-        self.components = elements.map(f)
+
+    public var data: Data
+
+    var creation: (Data.Element) -> Component
+    var identify: KeyPath<Data.Element, ID>
+
+    public init(data: Data, identify: KeyPath<Data.Element, ID>, @ComponentBuilder creation: @escaping (Data.Element) -> Component) {
+        self.data = data
+        self.creation = creation
+        self.identify = identify
     }
 
     @inline(__always)
     func create(prev: NativeViewProtocol?) -> NativeForEach {
         NativeView(
-            list: components.reduce(into: (prev, [NativeViewProtocol]())) { (result, component) in
+            list: data.map(creation).reduce(into: (prev, [NativeViewProtocol]())) { (result, component) in
                 result.1.append(component.create(prev: result.0))
                 result.0 = result.1.last
             }.1,
@@ -93,47 +100,72 @@ public struct ForEach<Component: ComponentBase>: ComponentBase, _Component where
     }
 
     @inline(__always)
-    func update(native: NativeForEach, oldValue: ForEach<Component>?) -> [Mount] {
+    func update(native: NativeForEach, oldValue: ForEach?) -> [Mount] {
         guard #available(iOS 13, *) else {
             return updateWithoutDifference(native: native, oldValue: oldValue)
         }
-        let diff = components.difference(from: oldValue?.components ?? [])
-        return diff.reduce(into: [Mount]()) { (mounts, change) in
+        let oldData = oldValue?.data.map { $0 } ?? []
+        let diff = data.map { $0[keyPath: identify] }.difference(from: oldData.map { $0[keyPath: identify] })
+        let (fixedOldData, mounts) = diff.reduce(into: (oldData as [Data.Element?], [Mount]())) { (result, change) in
             switch change {
             case .remove(let offset, _, _):
-                mounts.append(native.unmountElement(at: offset))
-            case .insert(let offset, let element, _):
-                let (native0, mounts0) = native.reuseElement(component: element) ?? (element.create(prev: nil), [])
-                mounts += mounts0
-                mounts.append(native.mountElement(element: native0, at: offset))
+                result.0.remove(at: offset)
+                result.1.append(native.unmountElement(at: offset))
+            case .insert(let offset, _, _):
+                result.0.insert(nil, at: offset)
             }
+        }
+
+        return mounts + zip(data, fixedOldData).enumerated().flatMap { (offset, value) -> [Mount] in
+            let (element, oldValue) = value
+            let component = creation(element)
+            if let oldValue = oldValue {
+                return component.update(native: native.list[offset], oldValue: creation(oldValue))
+            }
+            let (native0, mounts0) = native.reuseElement(component: component) ?? (component.create(prev: nil), [])
+            return mounts0 + [native.mountElement(element: native0, at: offset)]
         }
     }
 
 
     @inline(__always)
-    func updateWithoutDifference(native: NativeForEach, oldValue: ForEach<Component>?) -> [Mount] {
-        let oldComponents: [Component] = oldValue?.components ?? []
+    func updateWithoutDifference(native: NativeForEach, oldValue: ForEach?) -> [Mount] {
+        let oldData = oldValue?.data.map { $0 } ?? []
 
-        var mounts = zip(components, zip(native.list, oldComponents))
+        var mounts = zip(data, zip(native.list, oldData))
             .reduce(into: [Mount]()) { (result, value) in
-                let (component, (native, oldValue)) = value
-                result += component.update(native: native, oldValue: oldValue)
+                let (element, (native, oldValue)) = value
+                result += creation(element).update(native: native, oldValue: creation(oldValue))
         }
 
-        if components.count < oldComponents.count {
-            let range = components.count..<oldComponents.count
+        if data.count < oldData.count {
+            let range = data.count..<oldData.count
             mounts += range.map { native.unmountElement(at: $0) }
         }
 
-        if native.list.count < components.count {
-            let range = native.list.count..<components.count
+        if oldData.count < data.count {
+            let range = oldData.count..<data.count
             mounts += range.reduce(into: [Mount]()) { (mounts, index) in
-                let (native0, mounts0) = native.reuseElement(component: components[index]) ?? (components[index].create(prev: nil), [])
+                let component = creation(data[index])
+                let (native0, mounts0) = native.reuseElement(component: component) ?? (component.create(prev: nil), [])
                 mounts += mounts0
                 mounts.append(native.mountElement(element: native0, at: index))
             }
         }
         return mounts
+    }
+}
+
+public extension ForEach where ID == Data.Element {
+    @_disfavoredOverload
+    init(data: Data, @ComponentBuilder creation: @escaping (Data.Element) -> Component) {
+        self.init(data: data, identify: \.self, creation: creation)
+    }
+}
+
+@available(iOS 13, *)
+public extension ForEach where Data.Element: Identifiable, ID == Data.Element.ID {
+    init(data: Data, @ComponentBuilder creation: @escaping (Data.Element) -> Component) {
+        self.init(data: data, identify: \.id, creation: creation)
     }
 }

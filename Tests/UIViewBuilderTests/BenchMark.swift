@@ -21,7 +21,7 @@ class BenchMark: XCTestCase {
             var body: AnyComponent {
                 AnyComponent {
                     VStack {
-                        ForEach(array) {
+                        ForEach(data: array) {
                             Label(text: "\($0)")
                         }
                         if flag {

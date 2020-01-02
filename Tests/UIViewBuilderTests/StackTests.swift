@@ -193,13 +193,13 @@ class StackTests: XCTestCase {
             var body: AnyComponent {
                 AnyComponent {
                     VStack {
-                        ForEach(array0) {
+                        ForEach(data: array0) {
                             Label(text: $0)
                         }
-                        ForEach(array1) {
+                        ForEach(data: array1) {
                             Label(text: $0)
                         }
-                        ForEach(array2) {
+                        ForEach(data: array2) {
                             Label(text: $0)
                         }
                     }
@@ -248,6 +248,98 @@ class StackTests: XCTestCase {
         XCTAssertEqual(vc.view.subviews.first?.subviews.count, 10)
     }
 
+    @available(iOS 13, *)
+    func testForEachMapId() {
+        struct TestComponent: Component {
+            struct Identified: Component, Identifiable {
+                var id: Int
+                var text: String
+
+                var body: Label {
+                    Label(text: text)
+                }
+            }
+
+            var array0: [Identified]
+
+            var body: AnyComponent {
+                AnyComponent {
+                    VStack {
+                        ForEach(data: array0) {
+                            $0
+                        }
+                    }
+                }
+            }
+        }
+
+        var fixture = [
+            TestComponent.Identified(id: 1, text: "1"),
+            TestComponent.Identified(id: 2, text: "2"),
+            TestComponent.Identified(id: 3, text: "3")
+        ]
+
+        var component: TestComponent {
+            TestComponent(
+                array0: fixture
+            )
+        }
+
+        let vc = UIHostingController(component)
+        vc.view.layoutIfNeeded()
+
+        XCTAssertEqual(
+            vc.visibleViews().map { ($0 as! UILabel).text },
+            fixture.map { $0.text }
+        )
+
+        let expectedNativeIds = vc.visibleViews().map { ObjectIdentifier($0) }
+
+        fixture = [
+            TestComponent.Identified(id: 4, text: "1"),
+            TestComponent.Identified(id: 5, text: "2"),
+            TestComponent.Identified(id: 6, text: "3"),
+            TestComponent.Identified(id: 7, text: "4"),
+            TestComponent.Identified(id: 1, text: "5"),
+            TestComponent.Identified(id: 2, text: "6"),
+            TestComponent.Identified(id: 3, text: "7")
+        ]
+
+        vc.component = component
+        vc.view.layoutIfNeeded()
+
+        XCTAssertEqual(
+            vc.visibleViews().map { ($0 as! UILabel).text },
+            fixture.map { $0.text }
+        )
+
+        XCTAssertEqual(
+            expectedNativeIds,
+            vc.visibleViews()[4..<7].map { ObjectIdentifier($0) }
+        )
+
+        fixture = [
+            TestComponent.Identified(id: 1, text: "a"),
+            TestComponent.Identified(id: 2, text: "b"),
+            TestComponent.Identified(id: 3, text: "c")
+        ]
+
+        vc.component = component
+        vc.view.layoutIfNeeded()
+
+        XCTAssertEqual(
+            vc.visibleViews().map { ($0 as! UILabel).text },
+            fixture.map { $0.text }
+        )
+
+        XCTAssertEqual(
+            expectedNativeIds,
+            vc.visibleViews().map { ObjectIdentifier($0) }
+        )
+
+        XCTAssertEqual(vc.view.subviews.first?.subviews.count, 3)
+    }
+
     func testNested() {
         struct TestComponent: Component {
             var array0: [String]
@@ -258,17 +350,17 @@ class StackTests: XCTestCase {
                 AnyComponent {
                     VStack {
                         HStack {
-                            ForEach(array0) {
+                            ForEach(data: array0) {
                                 Label(text: $0)
                             }
                         }
                         VStack {
-                            ForEach(array1) {
+                            ForEach(data: array1) {
                                 Label(text: $0)
                             }
                         }
                         HStack {
-                            ForEach(array2) {
+                            ForEach(data: array2) {
                                 Label(text: $0)
                             }
                         }
@@ -325,7 +417,7 @@ class StackTests: XCTestCase {
                 AnyComponent {
                     VStack {
                         if condition0 {
-                            ForEach(array0) {
+                            ForEach(data: array0) {
                                 Label(text: $0)
                             }
                         }
