@@ -34,47 +34,47 @@ extension ComponentSet.Either where C1 == ComponentSet.Empty {
     }
 }
 
-public final class NativeEmpty: NativeViewProtocol {
-    public var prev: NativeViewProtocol?
+final class NativeEmpty: NativeViewProtocol {
+    var prev: NativeViewProtocol?
 
     init(prev: NativeViewProtocol?) {
         self.prev = prev
     }
 
     @inline(__always)
-    public var length: Int {
+    var length: Int {
         0
     }
 
     @inline(__always)
-    public func mount(to stackView: UIStackView, parent: UIViewController) {
+    func mount(to stackView: UIStackView, parent: UIViewController) {
 
     }
 
     @inline(__always)
-    public func unmount(from stackView: UIStackView) {
+    func unmount(from stackView: UIStackView) {
 
     }
 }
 
-public class NativePair<C0: NativeViewProtocol, C1: NativeViewProtocol>: NativeViewProtocol {
-    var c0: C0?
-    var c1: C1?
+class NativePair: NativeViewProtocol {
+    var c0: NativeViewProtocol?
+    var c1: NativeViewProtocol?
 
-    public var prev: NativeViewProtocol?
+    var prev: NativeViewProtocol?
 
-    init(c0: C0?, c1: C1?, prev: NativeViewProtocol?) {
+    init(c0: NativeViewProtocol?, c1: NativeViewProtocol?, prev: NativeViewProtocol?) {
         self.c0 = c0
         self.c1 = c1
         self.prev = prev
     }
 
-    public var length: Int {
+    var length: Int {
         (c0?.length ?? 0) + (c1?.length ?? 0)
     }
 
     @inline(__always)
-    public func mount(to stackView: UIStackView, parent: UIViewController) {
+    func mount(to stackView: UIStackView, parent: UIViewController) {
         if let c0 = c0 {
             c0.mount(to: stackView, parent: parent)
         }
@@ -84,48 +84,48 @@ public class NativePair<C0: NativeViewProtocol, C1: NativeViewProtocol>: NativeV
     }
 
     @inline(__always)
-    public func unmount(from stackView: UIStackView) {
+    func unmount(from stackView: UIStackView) {
         c0?.unmount(from: stackView)
         c1?.unmount(from: stackView)
     }
 }
 
-extension ComponentSet.Empty: _ComponentBase {
-    public typealias NativeView = NativeEmpty
-
+extension ComponentSet.Empty: ComponentBase, _Component {
+    typealias NativeView = NativeEmpty
+    
     @inline(__always)
-    public func create(prev: NativeViewProtocol?) -> NativeEmpty {
+    func create(prev: NativeViewProtocol?) -> NativeEmpty {
         .init(prev: prev)
     }
 
     @inline(__always)
-    public func update(native: NativeEmpty, oldValue: ComponentSet.Empty?) -> [Mount] {
+    func update(native: NativeEmpty, oldValue: ComponentSet.Empty?) -> [Mount] {
         []
     }
 }
 
-extension ComponentSet.Pair: _ComponentBase where C0: _ComponentBase, C1: _ComponentBase {
-    public typealias NativeView = NativePair<C0.NativeView, C1.NativeView>
+extension ComponentSet.Pair: ComponentBase, _Component where C0: ComponentBase, C1: ComponentBase {
+    typealias NativeView = NativePair
 
     @inline(__always)
-    public func create(prev: NativeViewProtocol?) -> NativePair<C0.NativeView, C1.NativeView> {
+    func create(prev: NativeViewProtocol?) -> NativePair {
         let native0 = c0.create(prev: prev)
         let native1 = c1.create(prev: native0)
         return NativePair(c0: native0, c1: native1, prev: prev)
     }
 
     @inline(__always)
-    public func update(native: NativePair<C0.NativeView, C1.NativeView>, oldValue: ComponentSet.Pair<C0, C1>?) -> [Mount] {
+    func update(native: NativePair, oldValue: ComponentSet.Pair<C0, C1>?) -> [Mount] {
         c0.update(native: native.c0!, oldValue: oldValue?.c0)
             + c1.update(native: native.c1!, oldValue: oldValue?.c1)
     }
 }
 
-extension ComponentSet.Either: _ComponentBase where C0: _ComponentBase, C1: _ComponentBase {
-    public typealias NativeView = NativePair<C0.NativeView, C1.NativeView>
+extension ComponentSet.Either: ComponentBase, _Component where C0: ComponentBase, C1: ComponentBase {
+    typealias NativeView = NativePair
 
     @inline(__always)
-    public func create(prev: NativeViewProtocol?) -> NativePair<C0.NativeView, C1.NativeView> {
+    func create(prev: NativeViewProtocol?) -> NativePair {
         switch self {
         case .c0(let c0):
             return .init(c0: c0.create(prev: prev), c1: nil, prev: prev)
@@ -135,7 +135,7 @@ extension ComponentSet.Either: _ComponentBase where C0: _ComponentBase, C1: _Com
     }
 
     @inline(__always)
-    public func update(native: NativePair<C0.NativeView, C1.NativeView>, oldValue: ComponentSet.Either<C0, C1>?) -> [Mount] {
+    func update(native: NativePair, oldValue: ComponentSet.Either<C0, C1>?) -> [Mount] {
         switch (self, oldValue) {
         case (.c0(let c0), .c0(let oldValue0)):
             return c0.update(native: native.c0!, oldValue: oldValue0)

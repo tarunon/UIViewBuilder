@@ -7,140 +7,114 @@
 
 import UIKit
 
-public final class AnyNativeView: NativeViewProtocol {
-    class Base: NativeViewProtocol {
-        @inlinable
-        var prev: NativeViewProtocol? {
-            get {
-                fatalError()
-            }
-            set {
-                fatalError()
-            }
-        }
-
-        @inlinable
-        var length: Int {
-            fatalError()
-        }
-
-        @inlinable
-        func mount(to stackView: UIStackView, parent: UIViewController) {
-            fatalError()
-        }
-
-        @inlinable
-        func unmount(from stackView: UIStackView) {
-            fatalError()
-        }
-    }
-
-    final class Box<Body: NativeViewProtocol>: Base {
-        var body: Body
-        init(body: Body) {
-            self.body = body
-        }
-
-        @inlinable
-        override var prev: NativeViewProtocol? {
-            get {
-                body.prev
-            }
-            set {
-                body.prev = newValue
-            }
-        }
-
-        @inlinable
-        override var length: Int {
-            body.length
-        }
-
-        @inlinable
-        override func mount(to stackView: UIStackView, parent: UIViewController) {
-            body.mount(to: stackView, parent: parent)
-        }
-
-        @inlinable
-        override func unmount(from stackView: UIStackView) {
-            body.unmount(from: stackView)
-        }
-    }
-
-    var box: Base
-    public init<Body: NativeViewProtocol>(body: Body) {
-        self.box = Box(body: body)
+final class AnyNativeView: NativeViewProtocol {
+    var body: NativeViewProtocol
+    init(body: NativeViewProtocol) {
+        self.body = body
     }
 
     @inline(__always)
-    public var prev: NativeViewProtocol? {
+    var prev: NativeViewProtocol? {
         get {
-            box.prev
+            body.prev
         }
         set {
-            box.prev = newValue
+            body.prev = newValue
         }
     }
 
     @inline(__always)
-    public var length: Int {
-        box.length
+    var length: Int {
+        body.length
     }
 
     @inline(__always)
-    public func mount(to stackView: UIStackView, parent: UIViewController) {
-        box.mount(to: stackView, parent: parent)
+    func mount(to stackView: UIStackView, parent: UIViewController) {
+        body.mount(to: stackView, parent: parent)
     }
 
     @inline(__always)
-    public func unmount(from stackView: UIStackView) {
-        box.unmount(from: stackView)
+    func unmount(from stackView: UIStackView) {
+        body.unmount(from: stackView)
     }
 }
 
-public struct AnyComponent: _ComponentBase {
-    public typealias NativeView = AnyNativeView
-    class Base: _ComponentBase {
-        @inlinable
+public struct AnyComponent: ComponentBase, _Component {
+    typealias NativeView = AnyNativeView
+
+    class Base: _Component {
         func create(prev: NativeViewProtocol?) -> AnyNativeView {
             fatalError()
         }
 
-        @inlinable
-        func update(native: AnyNativeView, oldValue: AnyComponent.Base?) -> [Mount] {
+        func update(native: AnyNativeView, oldValue: Base?) -> [Mount] {
             fatalError()
+        }
+
+        func `as`<Body>(_ componentType: Body.Type) -> Body? {
+            (self as? Box<Body>)?.body
         }
     }
 
-    final class Box<Body: _ComponentBase>: Base {
+    class Box<Body>: Base {
         var body: Body
         init(body: Body) {
             self.body = body
         }
+    }
 
-        @inlinable
+    final class GenericBox<Body: ComponentBase & _Component>: Box<Body> {
         override func create(prev: NativeViewProtocol?) -> AnyNativeView {
             AnyNativeView(body: body.create(prev: prev))
         }
 
-        @inlinable
-        override func update(native: AnyNativeView, oldValue: AnyComponent.Base?) -> [Mount] {
-            body.update(native: (native.box as! AnyNativeView.Box<Body.NativeView>).body, oldValue: (oldValue as? Box)?.body)
+        override func update(native: AnyNativeView, oldValue: Base?) -> [Mount] {
+            body.update(native: native.body as! Body.NativeView, oldValue: oldValue?.as(Body.self))
         }
     }
 
-    var box: Base
-    public init<Body: _ComponentBase>(@ComponentBuilder creation: () -> Body) {
-        self.box = Box(body: creation())
+    final class ClosureBox<Body: ComponentBase>: Box<Body> {
+        var _create: (NativeViewProtocol?) -> AnyNativeView
+        var _update: (AnyNativeView, AnyComponent?) -> [Mount]
+
+        init<NativeView: NativeViewProtocol>(create: @escaping (NativeViewProtocol?) -> NativeView, update: @escaping (NativeView, Body?) -> [Mount], body: Body) {
+            self._create = { AnyNativeView(body: create($0)) }
+            self._update = { update($0.body as! NativeView, $1?.box.as(Body.self)) }
+            super.init(body: body)
+        }
+
+        override func create(prev: NativeViewProtocol?) -> AnyNativeView {
+            _create(prev)
+        }
+
+        override func update(native: AnyNativeView, oldValue: Base?) -> [Mount] {
+            _update(native, oldValue.map(AnyComponent.init))
+        }
     }
 
-    @inline(__always)
-    public func create(prev: NativeViewProtocol?) -> AnyNativeView {
+    let box: Base
+
+    public init<Body: ComponentBase>(@ComponentBuilder creation: () -> Body) {
+        self = creation().asAnyComponent()
+    }
+
+    init(box: Base) {
+        self.box = box
+    }
+
+    init<Body: ComponentBase & _Component>(body: Body) {
+        self.box = GenericBox(body: body)
+    }
+
+    init<NativeView: NativeViewProtocol, Body: ComponentBase>(create: @escaping (NativeViewProtocol?) -> NativeView, update: @escaping (NativeView, Body?) -> [Mount], body: Body) {
+        self.box = ClosureBox(create: create, update: update, body: body)
+    }
+
+    func create(prev: NativeViewProtocol?) -> AnyNativeView {
         box.create(prev: prev)
     }
 
-    @inline(__always)
-    public func update(native: AnyNativeView, oldValue: AnyComponent?) -> [Mount] {
+    func update(native: AnyNativeView, oldValue: AnyComponent?) -> [Mount] {
         box.update(native: native, oldValue: oldValue?.box)
     }
 }

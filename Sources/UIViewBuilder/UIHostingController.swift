@@ -7,7 +7,7 @@
 
 import UIKit
 
-public class _UIHostingController<Component: _ComponentBase>: UIViewController {
+public class _UIHostingController<Component: ComponentBase>: UIViewController {
     class View: UIView {
         weak var parent: _UIHostingController?
         lazy var stackView = UIStackView()
@@ -59,7 +59,7 @@ public class _UIHostingController<Component: _ComponentBase>: UIViewController {
     }
 }
 
-public class UIHostingController<Component: _ComponentBase>: _UIHostingController<Component> {
+public class UIHostingController<Component: ComponentBase>: _UIHostingController<Component> {
     public override var component: Component {
         willSet {
             oldComponent = component

@@ -7,37 +7,37 @@
 
 import UIKit
 
-public protocol StackConfig {
+protocol StackConfig {
     static var axis: NSLayoutConstraint.Axis { get }
 }
 
-public struct HStackConfig: StackConfig {
+struct HStackConfig: StackConfig {
     public static let axis: NSLayoutConstraint.Axis = .horizontal
 }
 
-public struct VStackConfig: StackConfig {
+struct VStackConfig: StackConfig {
     public static let axis: NSLayoutConstraint.Axis = .vertical
 }
 
-public class _StackView<Config: StackConfig, Native: NativeViewProtocol>: NativeViewProtocol {
-    let creation: (NativeViewProtocol?) -> Native
-    var component: Native!
+class _StackView<Config: StackConfig>: NativeViewProtocol {
+    let creation: (NativeViewProtocol?) -> NativeViewProtocol
+    var component: NativeViewProtocol!
     var stackView: UIStackView!
 
-    init(config: Config.Type, creation: @escaping (NativeViewProtocol?) -> Native, prev: NativeViewProtocol?) {
+    init(config: Config.Type, creation: @escaping (NativeViewProtocol?) -> NativeViewProtocol, prev: NativeViewProtocol?) {
         self.creation = creation
         self.prev = prev
     }
 
-    public var prev: NativeViewProtocol?
+    var prev: NativeViewProtocol?
 
     @inline(__always)
-    public var length: Int {
+    var length: Int {
         stackView == nil ? component.length : stackView.superview == nil ? 0 : 1
     }
 
     @inline(__always)
-    public func mount(to stackView: UIStackView, parent: UIViewController) {
+    func mount(to stackView: UIStackView, parent: UIViewController) {
         if stackView.axis == Config.axis {
             if component == nil {
                 component = creation(prev)
@@ -57,7 +57,7 @@ public class _StackView<Config: StackConfig, Native: NativeViewProtocol>: Native
     }
 
     @inline(__always)
-    public func unmount(from stackView: UIStackView) {
+    func unmount(from stackView: UIStackView) {
         if stackView.axis == Config.axis {
             component.unmount(from: stackView)
         } else {
@@ -67,14 +67,17 @@ public class _StackView<Config: StackConfig, Native: NativeViewProtocol>: Native
     }
 }
 
-public protocol StackComponent: _ComponentBase {
+protocol StackComponent {
     associatedtype Config: StackConfig
-    associatedtype Body: _ComponentBase
-    associatedtype NativeView = _StackView<Config, Body.NativeView>
+    associatedtype Body: ComponentBase
     var body: Body { get }
 }
 
-public extension StackComponent where NativeView == _StackView<Config, Body.NativeView> {
+extension StackComponent {
+    typealias NativeView = _StackView<Config>
+}
+
+extension StackComponent {
     @inline(__always)
     func create(prev: NativeViewProtocol?) -> NativeView {
         _StackView(config: Config.self, creation: self.body.create, prev: prev)
@@ -90,18 +93,18 @@ public extension StackComponent where NativeView == _StackView<Config, Body.Nati
     }
 }
 
-public struct HStack<Body: _ComponentBase>: StackComponent {
-    public typealias Config = HStackConfig
-    public var body: Body
+public struct HStack<Body: ComponentBase>: ComponentBase, _Component, StackComponent {
+    typealias Config = HStackConfig
+    var body: Body
 
     public init(@ComponentBuilder creation: () -> Body) {
         self.body = creation()
     }
 }
 
-public struct VStack<Body: _ComponentBase>: StackComponent {
-    public typealias Config = VStackConfig
-    public var body: Body
+public struct VStack<Body: ComponentBase>: ComponentBase, _Component, StackComponent {
+    typealias Config = VStackConfig
+    var body: Body
 
     public init(@ComponentBuilder creation: () -> Body) {
         self.body = creation()

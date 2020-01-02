@@ -7,27 +7,27 @@
 
 import UIKit
 
-public class NativeForEach<Native: NativeViewProtocol>: NativeViewProtocol {
-    var list: [Native]
-    var reuseQueue: [Native] = []
+class NativeForEach: NativeViewProtocol {
+    var list: [NativeViewProtocol]
+    var reuseQueue: [NativeViewProtocol] = []
 
-    public var length: Int { list.map { $0.length }.reduce(0, +) }
-    public var prev: NativeViewProtocol?
+    var length: Int { list.map { $0.length }.reduce(0, +) }
+    var prev: NativeViewProtocol?
 
-    init(list: [Native], prev: NativeViewProtocol?) {
+    init(list: [NativeViewProtocol], prev: NativeViewProtocol?) {
         self.list = list
         self.prev = prev
     }
 
     @inline(__always)
-    public func mount(to stackView: UIStackView, parent: UIViewController) {
+    func mount(to stackView: UIStackView, parent: UIViewController) {
         list.forEach { (native) in
             native.mount(to: stackView, parent: parent)
         }
     }
 
     @inline(__always)
-    public func unmount(from stackView: UIStackView) {
+    func unmount(from stackView: UIStackView) {
         list.forEach { element in
             element.unmount(from: stackView)
         }
@@ -35,7 +35,8 @@ public class NativeForEach<Native: NativeViewProtocol>: NativeViewProtocol {
         list = []
     }
 
-    func mountElement(element: Native, at index: Int) -> Mount {
+    @inline(__always)
+    func mountElement(element: NativeViewProtocol, at index: Int) -> Mount {
         list.insert(element, at: index)
         var prev = self.prev
         if index > 0 {
@@ -47,6 +48,7 @@ public class NativeForEach<Native: NativeViewProtocol>: NativeViewProtocol {
         }
     }
 
+    @inline(__always)
     func unmountElement(at index: Int) -> Mount {
         let element = list.remove(at: index)
         if index < list.count {
@@ -63,7 +65,8 @@ public class NativeForEach<Native: NativeViewProtocol>: NativeViewProtocol {
         }
     }
 
-    func reuseElement<Component: _ComponentBase>(component: Component) -> (Native, [Mount])? where Component.NativeView == Native {
+    @inline(__always)
+    func reuseElement<Component: ComponentBase>(component: Component) -> (NativeViewProtocol, [Mount])? {
         guard let element = reuseQueue.popLast() else {
             return nil
         }
@@ -71,17 +74,17 @@ public class NativeForEach<Native: NativeViewProtocol>: NativeViewProtocol {
     }
 }
 
-public struct ForEach<Component: _ComponentBase>: _ComponentBase where Component: Equatable {
-    public typealias NativeView = NativeForEach<Component.NativeView>
-    public var components: [Component]
+public struct ForEach<Component: ComponentBase>: ComponentBase, _Component where Component: Equatable {
+    typealias NativeView = NativeForEach
+    var components: [Component]
     public init<T>(_ elements: [T], _ f: (T) -> Component) {
         self.components = elements.map(f)
     }
 
     @inline(__always)
-    public func create(prev: NativeViewProtocol?) -> NativeForEach<Component.NativeView> {
+    func create(prev: NativeViewProtocol?) -> NativeForEach {
         NativeView(
-            list: components.reduce(into: (prev, [Component.NativeView]())) { (result, component) in
+            list: components.reduce(into: (prev, [NativeViewProtocol]())) { (result, component) in
                 result.1.append(component.create(prev: result.0))
                 result.0 = result.1.last
             }.1,
@@ -90,7 +93,7 @@ public struct ForEach<Component: _ComponentBase>: _ComponentBase where Component
     }
 
     @inline(__always)
-    public func update(native: NativeForEach<Component.NativeView>, oldValue: ForEach<Component>?) -> [Mount] {
+    func update(native: NativeForEach, oldValue: ForEach<Component>?) -> [Mount] {
         guard #available(iOS 13, *) else {
             return updateWithoutDifference(native: native, oldValue: oldValue)
         }
@@ -107,7 +110,9 @@ public struct ForEach<Component: _ComponentBase>: _ComponentBase where Component
         }
     }
 
-    func updateWithoutDifference(native: NativeForEach<Component.NativeView>, oldValue: ForEach<Component>?) -> [Mount] {
+
+    @inline(__always)
+    func updateWithoutDifference(native: NativeForEach, oldValue: ForEach<Component>?) -> [Mount] {
         let oldComponents: [Component] = oldValue?.components ?? []
 
         var mounts = zip(components, zip(native.list, oldComponents))
