@@ -7,7 +7,7 @@
 
 import UIKit
 
-typealias Mount = (UIStackView, UIViewController) -> ()
+typealias Mount = (Mountable, UIViewController) -> ()
 
 public protocol ComponentBase {
     func asAnyComponent() -> AnyComponent
@@ -30,6 +30,7 @@ protocol _Component: ComponentBase {
 
     func create(prev: NativeViewProtocol?) -> NativeView
     func update(native: NativeView, oldValue: Self?) -> [Mount]
+    func enumerate() -> [ComponentBase]
 }
 
 extension _Component {
@@ -54,6 +55,7 @@ extension Component {
                 }
                 return []
             },
+            enumerate: erased.enumerate,
             body: self
         )
     }

@@ -47,12 +47,12 @@ final class NativeEmpty: NativeViewProtocol {
     }
 
     @inline(__always)
-    func mount(to stackView: UIStackView, parent: UIViewController) {
+    func mount(to target: Mountable, parent: UIViewController) {
 
     }
 
     @inline(__always)
-    func unmount(from stackView: UIStackView) {
+    func unmount(from target: Mountable) {
 
     }
 }
@@ -75,19 +75,19 @@ class NativePair: NativeViewProtocol {
     }
 
     @inline(__always)
-    func mount(to stackView: UIStackView, parent: UIViewController) {
+    func mount(to target: Mountable, parent: UIViewController) {
         if let c0 = c0 {
-            c0.mount(to: stackView, parent: parent)
+            c0.mount(to: target, parent: parent)
         }
         if let c1 = c1 {
-            c1.mount(to: stackView, parent: parent)
+            c1.mount(to: target, parent: parent)
         }
     }
 
     @inline(__always)
-    func unmount(from stackView: UIStackView) {
-        c0?.unmount(from: stackView)
-        c1?.unmount(from: stackView)
+    func unmount(from target: Mountable) {
+        c0?.unmount(from: target)
+        c1?.unmount(from: target)
     }
 }
 
@@ -101,6 +101,10 @@ extension ComponentSet.Empty: ComponentBase, _Component {
 
     @inline(__always)
     func update(native: NativeEmpty, oldValue: ComponentSet.Empty?) -> [Mount] {
+        []
+    }
+
+    func enumerate() -> [ComponentBase] {
         []
     }
 }
@@ -119,6 +123,11 @@ extension ComponentSet.Pair: ComponentBase, _Component where C0: ComponentBase, 
     func update(native: NativePair, oldValue: ComponentSet.Pair<C0, C1>?) -> [Mount] {
         c0.update(native: native.c0!, oldValue: oldValue?.c0)
             + c1.update(native: native.c1!, oldValue: oldValue?.c1)
+    }
+
+    @inline(__always)
+    func enumerate() -> [ComponentBase] {
+        c0.asAnyComponent().enumerate() + c1.asAnyComponent().enumerate()
     }
 }
 
@@ -168,6 +177,14 @@ extension ComponentSet.Either: ComponentBase, _Component where C0: ComponentBase
                     native.c1?.mount(to: stackView, parent: parent)
                 }
             ]
+        }
+    }
+
+    @inline(__always)
+    func enumerate() -> [ComponentBase] {
+        switch self {
+        case .c0(let c0): return c0.asAnyComponent().enumerate()
+        case .c1(let c1): return c1.asAnyComponent().enumerate()
         }
     }
 }

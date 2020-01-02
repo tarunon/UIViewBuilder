@@ -26,6 +26,9 @@ extension UIViewRepresentable {
                 }
                 return []
             },
+            enumerate: {
+                [self]
+            },
             body: self
         )
     }
@@ -45,14 +48,13 @@ class ViewWrapper<View: UIView>: NativeViewProtocol {
     var length: Int { view.superview == nil ? 0 : 1 }
 
     @inline(__always)
-    func mount(to stackView: UIStackView, parent: UIViewController) {
-        stackView.insertArrangedSubview(view, at: offset)
+    func mount(to target: Mountable, parent: UIViewController) {
+        target.mount(view: view, index: offset)
     }
 
     @inline(__always)
-    func unmount(from stackView: UIStackView) {
-        stackView.removeArrangedSubview(view)
-        view.removeFromSuperview()
+    func unmount(from target: Mountable) {
+        target.unmount(view: view)
     }
 }
 
@@ -75,6 +77,9 @@ extension UIViewControllerRepresentable {
                 }
                 return []
             },
+            enumerate: {
+                [self]
+            },
             body: self
         )
     }
@@ -94,12 +99,12 @@ class ViewControllerWrapper<ViewController: UIViewController>: NativeViewProtoco
     var length: Int { viewController.view.superview == nil ? 0 : 1 }
 
     @inline(__always)
-    func mount(to stackView: UIStackView, parent: UIViewController) {
-        stackView.insertArrangedViewController(viewController, at: offset, parentViewController: parent)
+    func mount(to target: Mountable, parent: UIViewController) {
+        target.mount(viewController: viewController, index: offset, parent: parent)
     }
 
     @inline(__always)
-    func unmount(from stackView: UIStackView) {
-        stackView.removeArrangedViewController(viewController)
+    func unmount(from target: Mountable) {
+        target.unmount(viewController: viewController)
     }
 }

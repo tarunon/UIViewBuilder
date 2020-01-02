@@ -7,12 +7,19 @@
 
 import UIKit
 
+protocol Mountable {
+    func mount(viewController: UIViewController, index: Int, parent: UIViewController)
+    func mount(view: UIView, index: Int)
+    func unmount(viewController: UIViewController)
+    func unmount(view: UIView)
+}
+
 protocol NativeViewProtocol: class {
     var prev: NativeViewProtocol? { get set }
     var offset: Int { get }
     var length: Int { get }
-    func mount(to stackView: UIStackView, parent: UIViewController)
-    func unmount(from stackView: UIStackView)
+    func mount(to target: Mountable, parent: UIViewController)
+    func unmount(from target: Mountable)
 }
 
 extension NativeViewProtocol {

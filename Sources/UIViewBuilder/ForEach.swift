@@ -20,16 +20,16 @@ class NativeForEach: NativeViewProtocol {
     }
 
     @inline(__always)
-    func mount(to stackView: UIStackView, parent: UIViewController) {
+    func mount(to target: Mountable, parent: UIViewController) {
         list.forEach { (native) in
-            native.mount(to: stackView, parent: parent)
+            native.mount(to: target, parent: parent)
         }
     }
 
     @inline(__always)
-    func unmount(from stackView: UIStackView) {
+    func unmount(from target: Mountable) {
         list.forEach { element in
-            element.unmount(from: stackView)
+            element.unmount(from: target)
         }
         reuseQueue += list
         list = []
@@ -43,8 +43,8 @@ class NativeForEach: NativeViewProtocol {
             prev = list[index - 1]
         }
         element.prev = prev
-        return { (stackView, parent) in
-            element.mount(to: stackView, parent: parent)
+        return { (target, parent) in
+            element.mount(to: target, parent: parent)
         }
     }
 
@@ -60,8 +60,8 @@ class NativeForEach: NativeViewProtocol {
         }
         element.prev = nil
         reuseQueue.append(element)
-        return { (stackView, _) in
-            element.unmount(from: stackView)
+        return { (target, _) in
+            element.unmount(from: target)
         }
     }
 
@@ -153,6 +153,11 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
             }
         }
         return mounts
+    }
+
+    @inline(__always)
+    func enumerate() -> [ComponentBase] {
+        data.map(creation).flatMap { $0.asAnyComponent().enumerate() }
     }
 }
 

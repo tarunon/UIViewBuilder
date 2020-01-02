@@ -1,8 +1,8 @@
 //
-//  StackTests.swift
+//  ListTests.swift
 //  
 //
-//  Created by tarunon on 2020/01/01.
+//  Created by tarunon on 2020/01/02.
 //
 
 import XCTest
@@ -10,11 +10,11 @@ import UIViewBuilder
 
 fileprivate extension UIHostingController {
     func visibleViews() -> [UIView] {
-        (view.subviews.first?.subviews.first as! UIStackView).arrangedSubviews.filter { !$0.isHidden }
+        (children.first as! UITableViewController).tableView.visibleCells.compactMap { $0.contentView.subviews.first?.subviews.first }
     }
 }
 
-class StackTests: XCTestCase {
+class ListTests: XCTestCase {
     func testPair() {
         struct TestComponent: Component {
             var text0: String
@@ -30,7 +30,7 @@ class StackTests: XCTestCase {
 
             var body: AnyComponent {
                 AnyComponent {
-                    VStack {
+                    List {
                         Label(text: text0)
                         Label(text: text1)
                         Label(text: text2)
@@ -68,6 +68,7 @@ class StackTests: XCTestCase {
         window.rootViewController = vc
         window.isHidden = false
         vc.view.layoutIfNeeded()
+
         XCTAssertEqual(
             vc.visibleViews().map { ($0 as! UILabel).text },
             fixture
@@ -99,7 +100,7 @@ class StackTests: XCTestCase {
 
             var body: AnyComponent {
                 AnyComponent {
-                    VStack {
+                    List {
                         if condition0 {
                             Label(text: "0")
                         }
@@ -167,6 +168,7 @@ class StackTests: XCTestCase {
         window.rootViewController = vc
         window.isHidden = false
         vc.view.layoutIfNeeded()
+
         XCTAssertEqual(
             vc.visibleViews().map { ($0 as! UILabel).text },
             ["0", "2", "4", "a", "6", "c", "8", "e"]
@@ -191,7 +193,7 @@ class StackTests: XCTestCase {
 
             var body: AnyComponent {
                 AnyComponent {
-                    VStack {
+                    List {
                         ForEach(data: array0) {
                             Label(text: $0)
                         }
@@ -263,7 +265,7 @@ class StackTests: XCTestCase {
 
             var body: AnyComponent {
                 AnyComponent {
-                    VStack {
+                    List {
                         ForEach(data: array0) {
                             $0
                         }
@@ -313,11 +315,11 @@ class StackTests: XCTestCase {
             vc.visibleViews().map { ($0 as! UILabel).text },
             fixture.map { $0.text }
         )
-
-        XCTAssertEqual(
-            expectedNativeIds,
-            vc.visibleViews()[4..<7].map { ObjectIdentifier($0) }
-        )
+// TODO: Implement difference update
+//        XCTAssertEqual(
+//            expectedNativeIds,
+//            vc.visibleViews()[4..<7].map { ObjectIdentifier($0) }
+//        )
 
         fixture = [
             TestComponent.Identified(id: 1, text: "a"),
@@ -346,7 +348,7 @@ class StackTests: XCTestCase {
 
             var body: AnyComponent {
                 AnyComponent {
-                    VStack {
+                    List {
                         if condition0 {
                             ForEach(data: array0) {
                                 Label(text: $0)

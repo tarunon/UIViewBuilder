@@ -29,13 +29,13 @@ final class AnyNativeView: NativeViewProtocol {
     }
 
     @inline(__always)
-    func mount(to stackView: UIStackView, parent: UIViewController) {
-        body.mount(to: stackView, parent: parent)
+    func mount(to target: Mountable, parent: UIViewController) {
+        body.mount(to: target, parent: parent)
     }
 
     @inline(__always)
-    func unmount(from stackView: UIStackView) {
-        body.unmount(from: stackView)
+    func unmount(from target: Mountable) {
+        body.unmount(from: target)
     }
 }
 
@@ -48,6 +48,10 @@ public struct AnyComponent: ComponentBase, _Component {
         }
 
         func update(native: AnyNativeView, oldValue: Base?) -> [Mount] {
+            fatalError()
+        }
+
+        func enumerate() -> [ComponentBase] {
             fatalError()
         }
 
@@ -73,15 +77,22 @@ public struct AnyComponent: ComponentBase, _Component {
         override func update(native: AnyNativeView, oldValue: Base?) -> [Mount] {
             body.update(native: native.body as! Body.NativeView, oldValue: oldValue?.as(Body.self))
         }
+
+        @inline(__always)
+        override func enumerate() -> [ComponentBase] {
+            body.enumerate()
+        }
     }
 
     final class ClosureBox<Body: ComponentBase>: Box<Body> {
         var _create: (NativeViewProtocol?) -> AnyNativeView
         var _update: (AnyNativeView, AnyComponent?) -> [Mount]
+        var _enumerate: () -> [ComponentBase]
 
-        init<NativeView: NativeViewProtocol>(create: @escaping (NativeViewProtocol?) -> NativeView, update: @escaping (NativeView, Body?) -> [Mount], body: Body) {
+        init<NativeView: NativeViewProtocol>(create: @escaping (NativeViewProtocol?) -> NativeView, update: @escaping (NativeView, Body?) -> [Mount], enumerate: @escaping () -> [ComponentBase], body: Body) {
             self._create = { AnyNativeView(body: create($0)) }
             self._update = { update($0.body as! NativeView, $1?.box.as(Body.self)) }
+            self._enumerate = enumerate
             super.init(body: body)
         }
 
@@ -93,6 +104,11 @@ public struct AnyComponent: ComponentBase, _Component {
         @inline(__always)
         override func update(native: AnyNativeView, oldValue: Base?) -> [Mount] {
             _update(native, oldValue.map(AnyComponent.init))
+        }
+
+        @inline(__always)
+        override func enumerate() -> [ComponentBase] {
+            _enumerate()
         }
     }
 
@@ -110,8 +126,8 @@ public struct AnyComponent: ComponentBase, _Component {
         self.box = GenericBox(body: body)
     }
 
-    init<NativeView: NativeViewProtocol, Body: ComponentBase>(create: @escaping (NativeViewProtocol?) -> NativeView, update: @escaping (NativeView, Body?) -> [Mount], body: Body) {
-        self.box = ClosureBox(create: create, update: update, body: body)
+    init<NativeView: NativeViewProtocol, Body: ComponentBase>(create: @escaping (NativeViewProtocol?) -> NativeView, update: @escaping (NativeView, Body?) -> [Mount], enumerate: @escaping () -> [ComponentBase], body: Body) {
+        self.box = ClosureBox(create: create, update: update, enumerate: enumerate, body: body)
     }
 
     @inline(__always)
@@ -122,5 +138,10 @@ public struct AnyComponent: ComponentBase, _Component {
     @inline(__always)
     func update(native: AnyNativeView, oldValue: AnyComponent?) -> [Mount] {
         box.update(native: native, oldValue: oldValue?.box)
+    }
+
+    @inline(__always)
+    func enumerate() -> [ComponentBase] {
+        box.enumerate()
     }
 }

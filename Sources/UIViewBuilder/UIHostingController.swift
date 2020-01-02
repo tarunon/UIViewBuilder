@@ -14,8 +14,17 @@ public class _UIHostingController<Component: ComponentBase>: UIViewController {
         init(parent: _UIHostingController) {
             self.parent = parent
             super.init(frame: .zero)
+            stackView.translatesAutoresizingMaskIntoConstraints = false
             stackView.axis = .vertical
             addSubview(stackView)
+            NSLayoutConstraint.activate(
+                [
+                    stackView.topAnchor.constraint(equalTo: topAnchor),
+                    stackView.leftAnchor.constraint(equalTo: leftAnchor),
+                    stackView.rightAnchor.constraint(equalTo: rightAnchor),
+                    stackView.bottomAnchor.constraint(equalTo: bottomAnchor)
+                ]
+            )
         }
 
         @available(*, unavailable)
@@ -55,7 +64,7 @@ public class _UIHostingController<Component: ComponentBase>: UIViewController {
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        _ = native.mount(to: _view.stackView, parent: self)
+        native.mount(to: _view.stackView, parent: self)
     }
 }
 

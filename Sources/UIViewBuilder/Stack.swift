@@ -19,9 +19,9 @@ struct VStackConfig: StackConfig {
     public static let axis: NSLayoutConstraint.Axis = .vertical
 }
 
-class _StackView<Config: StackConfig>: NativeViewProtocol {
+class NativeStack<Config: StackConfig>: NativeViewProtocol {
     let creation: (NativeViewProtocol?) -> NativeViewProtocol
-    var component: NativeViewProtocol!
+    lazy var component = self.creation(nil)
     var stackView: UIStackView!
 
     init(config: Config.Type, creation: @escaping (NativeViewProtocol?) -> NativeViewProtocol, prev: NativeViewProtocol?) {
@@ -33,54 +33,36 @@ class _StackView<Config: StackConfig>: NativeViewProtocol {
 
     @inline(__always)
     var length: Int {
-        stackView == nil ? component.length : stackView.superview == nil ? 0 : 1
+        stackView.superview == nil ? 0 : 1
     }
 
     @inline(__always)
-    func mount(to stackView: UIStackView, parent: UIViewController) {
-        if stackView.axis == Config.axis {
-            if component == nil {
-                component = creation(prev)
-            }
-            component.mount(to: stackView, parent: parent)
-        } else {
-            if component == nil {
-                component = creation(nil)
-            }
-            if self.stackView == nil {
-                self.stackView = UIStackView()
-                self.stackView.axis = Config.axis
-                stackView.insertArrangedSubview(self.stackView, at: offset)
-            }
-            _ = component.mount(to: self.stackView, parent: parent)
+    func mount(to target: Mountable, parent: UIViewController) {
+        if self.stackView == nil {
+            stackView = UIStackView()
+            stackView.axis = Config.axis
+            target.mount(view: stackView, index: offset)
         }
+        component.mount(to: stackView, parent: parent)
     }
 
     @inline(__always)
-    func unmount(from stackView: UIStackView) {
-        if stackView.axis == Config.axis {
-            component.unmount(from: stackView)
-        } else {
-            stackView.removeArrangedSubview(self.stackView)
-            self.stackView.removeFromSuperview()
-        }
+    func unmount(from target: Mountable) {
+        target.unmount(view: stackView)
     }
 }
 
-protocol StackComponent {
+protocol StackComponent: _Component {
     associatedtype Config: StackConfig
     associatedtype Body: ComponentBase
+    associatedtype NativeView = NativeStack<Config>
     var body: Body { get }
 }
 
-extension StackComponent {
-    typealias NativeView = _StackView<Config>
-}
-
-extension StackComponent {
+extension StackComponent where NativeView == NativeStack<Config> {
     @inline(__always)
     func create(prev: NativeViewProtocol?) -> NativeView {
-        _StackView(config: Config.self, creation: self.body.create, prev: prev)
+        NativeStack(config: Config.self, creation: self.body.create, prev: prev)
     }
 
     @inline(__always)
@@ -91,9 +73,14 @@ extension StackComponent {
             }
         }
     }
+
+    @inline(__always)
+    func enumerate() -> [ComponentBase] {
+        [self]
+    }
 }
 
-public struct HStack<Body: ComponentBase>: ComponentBase, _Component, StackComponent {
+public struct HStack<Body: ComponentBase>: ComponentBase, StackComponent {
     typealias Config = HStackConfig
     var body: Body
 
@@ -102,7 +89,7 @@ public struct HStack<Body: ComponentBase>: ComponentBase, _Component, StackCompo
     }
 }
 
-public struct VStack<Body: ComponentBase>: ComponentBase, _Component, StackComponent {
+public struct VStack<Body: ComponentBase>: ComponentBase, StackComponent {
     typealias Config = VStackConfig
     var body: Body
 
@@ -131,5 +118,24 @@ extension UIStackView {
         removeArrangedSubview(viewController.view)
         viewController.view.removeFromSuperview()
         viewController.removeFromParent()
+    }
+}
+
+extension UIStackView: Mountable {
+    func mount(view: UIView, index: Int) {
+        insertArrangedSubview(view, at: index)
+    }
+
+    func mount(viewController: UIViewController, index: Int, parent: UIViewController) {
+        insertArrangedViewController(viewController, at: index, parentViewController: parent)
+    }
+
+    func unmount(view: UIView) {
+        removeArrangedSubview(view)
+        view.removeFromSuperview()
+    }
+
+    func unmount(viewController: UIViewController) {
+        removeArrangedViewController(viewController)
     }
 }
