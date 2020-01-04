@@ -9,13 +9,13 @@ import UIKit
 
 fileprivate extension ComponentBase {
     typealias Cell = NativeCell<Self>
-
+    
     func registerCell(to parent: UITableViewController) {
-        parent.tableView.register(Cell.self, forCellReuseIdentifier: Cell.reuseIdentifier)
+        parent.tableView.register(Cell.self, forCellReuseIdentifier: Self.reuseIdentifier)
     }
     
     func dequeueCell(from parent: UITableViewController, indexPath: IndexPath) -> UITableViewCell {
-        let cell = parent.tableView.dequeueReusableCell(withIdentifier: Cell.reuseIdentifier, for: indexPath) as! Cell
+        let cell = parent.tableView.dequeueReusableCell(withIdentifier: Self.reuseIdentifier, for: indexPath) as! Cell
         cell.render(body: self, parent: parent)
         return cell
     }
@@ -23,7 +23,7 @@ fileprivate extension ComponentBase {
 
 class NativeCell<Body: ComponentBase>: UITableViewCell, Mountable {
     weak var parentViewController: UIViewController?
-    var contentViewController: UIViewController?
+    var contentViewControllers: [UIViewController] = []
     var oldComponent: Body?
     var natives: [NativeViewProtocol]!
     lazy var stackView: UIStackView = {
@@ -45,25 +45,23 @@ class NativeCell<Body: ComponentBase>: UITableViewCell, Mountable {
         return stackView
     }()
 
-    static var reuseIdentifier: String {
-        "\(ObjectIdentifier(Body.self).hashValue)"
-    }
-
     override func willMove(toSuperview newSuperview: UIView?) {
-        guard let contentViewController = contentViewController else { return }
-        if newSuperview == nil {
-            contentViewController.willMove(toParent: parentViewController)
-        } else {
-            parentViewController?.addChild(contentViewController)
+        contentViewControllers.forEach { content in
+            if newSuperview == nil {
+                content.willMove(toParent: parentViewController)
+            } else {
+                parentViewController?.addChild(content)
+            }
         }
     }
 
     override func didMoveToSuperview() {
-        guard let contentViewController = contentViewController else { return }
-        if superview == nil {
-            contentViewController.removeFromParent()
-        } else {
-            contentViewController.didMove(toParent: parentViewController)
+        contentViewControllers.forEach { content in
+            if superview == nil {
+                content.removeFromParent()
+            } else {
+                content.didMove(toParent: parentViewController)
+            }
         }
     }
 
@@ -78,7 +76,7 @@ class NativeCell<Body: ComponentBase>: UITableViewCell, Mountable {
                 native.mount(to: self, at: index, parent: parent)
             }
         } else {
-            update(changes: body.traverse(oldValue: oldComponent), natives: &natives, parent: parent)
+            update(differences: body.claim(oldValue: oldComponent), natives: &natives, parent: parent)
         }
     }
 
@@ -88,24 +86,24 @@ class NativeCell<Body: ComponentBase>: UITableViewCell, Mountable {
 
     func mount(viewController: UIViewController, at index: Int, parent: UIViewController) {
         stackView.insertArrangedViewController(viewController, at: index, parentViewController: parent)
-        contentViewController = viewController
+        contentViewControllers.append(viewController)
     }
 
-    func unmount(view: UIView?, at index: Int) {
-        view.map(stackView.removeArrangedSubview)
-        view?.removeFromSuperview()
+    func unmount(view: UIView) {
+        stackView.removeArrangedSubview(view)
+        view.removeFromSuperview()
     }
 
-    func unmount(viewController: UIViewController?, at index: Int) {
-        viewController?.view.map(stackView.removeArrangedSubview(_:))
-        viewController?.view.removeFromSuperview()
+    func unmount(viewController: UIViewController) {
+        stackView.removeArrangedViewController(viewController)
+        contentViewControllers.removeAll(where: { $0 == viewController })
     }
 }
 
-class NativeList<Body: ComponentBase>: UITableViewController, NativeViewProtocol {
+class NativeList<Body: ComponentBase>: UITableViewController {
     var body: Body {
         didSet {
-            update(changes: body.traverse(oldValue: oldValue))
+            update(differences: body.claim(oldValue: oldValue))
         }
     }
 
@@ -126,34 +124,26 @@ class NativeList<Body: ComponentBase>: UITableViewController, NativeViewProtocol
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.beginUpdates()
-        update(changes: body.traverse(oldValue: nil))
+        update(differences: body.claim(oldValue: nil))
         tableView.endUpdates()
     }
 
-    func update(changes: [Change]) {
-        changes.forEach { change in
-            switch change.difference {
+    func update(differences: [Difference]) {
+        differences.forEach { difference in
+            switch difference.change {
             case .remove:
-                components.remove(at: change.index)
-                tableView.deleteRows(at: [IndexPath(row: change.index, section: 0)], with: .automatic)
+                components.remove(at: difference.index)
+                tableView.deleteRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
             case .insert(let component):
                 component.registerCell(to: self)
-                components.insert(component, at: change.index)
-                tableView.insertRows(at: [IndexPath(row: change.index, section: 0)], with: .automatic)
+                components.insert(component, at: difference.index)
+                tableView.insertRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
             case .update(let component):
                 component.registerCell(to: self)
-                components[change.index] = component
-                tableView.reloadRows(at: [IndexPath(row: change.index, section: 0)], with: .automatic)
+                components[difference.index] = component
+                tableView.reloadRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
             }
         }
-    }
-
-    func mount(to target: Mountable, at index: Int, parent: UIViewController) {
-        target.mount(viewController: self, at: index, parent: parent)
-    }
-
-    func unmount(from target: Mountable, at index: Int) {
-        target.unmount(viewController: self, at: index)
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
@@ -180,8 +170,8 @@ public struct List<Body: ComponentBase>: ComponentBase, _Component {
         [NativeList(body: body)]
     }
 
-    func traverse(oldValue: List?) -> [Change] {
-        return [Change(index: 0, difference: .update(self))]
+    func claim(oldValue: List?) -> [Difference] {
+        return [Difference(index: 0, change: .update(self))]
     }
 
     func update(native: NativeViewProtocol) {

@@ -13,7 +13,7 @@ public struct AnyComponent: ComponentBase, _Component {
             fatalError()
         }
 
-        func traverse(oldValue: AnyComponent.Base?) -> [Change] {
+        func claim(oldValue: AnyComponent.Base?) -> [Difference] {
             fatalError()
         }
 
@@ -44,8 +44,8 @@ public struct AnyComponent: ComponentBase, _Component {
         }
 
         @inline(__always)
-        override func traverse(oldValue: AnyComponent.Base?) -> [Change] {
-            body.traverse(oldValue: oldValue?.as(Body.self))
+        override func claim(oldValue: AnyComponent.Base?) -> [Difference] {
+            body.claim(oldValue: oldValue?.as(Body.self))
         }
 
         @inline(__always)
@@ -60,7 +60,7 @@ public struct AnyComponent: ComponentBase, _Component {
     }
 
     typealias Create = () -> [NativeViewProtocol]
-    typealias Traverse<Component> = (Component?) -> [Change]
+    typealias Traverse<Component> = (Component?) -> [Difference]
     typealias Update = (NativeViewProtocol) -> ()
     typealias Length = () -> Int
 
@@ -89,7 +89,7 @@ public struct AnyComponent: ComponentBase, _Component {
         }
 
         @inline(__always)
-        override func traverse(oldValue: AnyComponent.Base?) -> [Change] {
+        override func claim(oldValue: AnyComponent.Base?) -> [Difference] {
             _traverse(oldValue)
         }
 
@@ -113,14 +113,24 @@ public struct AnyComponent: ComponentBase, _Component {
         self.box = ClosureBox(create: create, traverse: traverse, update: update, length: length, body: body)
     }
 
+    init<Body: NativeRepresentable>(body: Body) where Body.Native: NativeViewProtocol {
+        self.box = ClosureBox(
+            create: { [body.create()] },
+            traverse: body.traverse,
+            update: { body.update(native: $0 as! Body.Native) },
+            length: { 1 },
+            body: body
+        )
+    }
+
     @inline(__always)
     func create() -> [NativeViewProtocol] {
         box.create()
     }
 
     @inline(__always)
-    func traverse(oldValue: AnyComponent?) -> [Change] {
-        box.traverse(oldValue: oldValue?.box)
+    func claim(oldValue: AnyComponent?) -> [Difference] {
+        box.claim(oldValue: oldValue?.box)
     }
 
     @inline(__always)

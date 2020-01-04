@@ -7,23 +7,21 @@
 
 import UIKit
 
-typealias Mount = (Mountable, UIViewController) -> ()
-
 public protocol ComponentBase {
     func asAnyComponent() -> AnyComponent
 }
 
-struct Change {
-    enum Difference {
+struct Difference {
+    enum Change {
         case insert(ComponentBase)
         case update(ComponentBase)
         case remove
     }
     var index: Int
-    var difference: Difference
+    var change: Change
 
-    func with(offset: Int) -> Change {
-        Change(index: index + offset, difference: difference)
+    func with(offset: Int) -> Difference {
+        Difference(index: index + offset, change: change)
     }
 }
 
@@ -34,8 +32,8 @@ extension ComponentBase {
     }
 
     @inline(__always)
-    func traverse(oldValue: Self?) -> [Change] {
-        asAnyComponent().traverse(oldValue: oldValue?.asAnyComponent())
+    func claim(oldValue: Self?) -> [Difference] {
+        asAnyComponent().claim(oldValue: oldValue?.asAnyComponent())
     }
 
     @inline(__always)
@@ -51,7 +49,7 @@ extension ComponentBase {
 
 protocol _Component: ComponentBase {
     func create() -> [NativeViewProtocol]
-    func traverse(oldValue: Self?) -> [Change]
+    func claim(oldValue: Self?) -> [Difference]
     func update(native: NativeViewProtocol)
     func length() -> Int
 }
@@ -72,9 +70,9 @@ extension Component {
         let erased = body.asAnyComponent()
         return AnyComponent(
             create: erased.create,
-            traverse: { (oldValue) -> [Change] in
+            traverse: { (oldValue) -> [Difference] in
                 if self != oldValue {
-                    return erased.traverse(oldValue: oldValue?.body.asAnyComponent())
+                    return erased.claim(oldValue: oldValue?.body.asAnyComponent())
                 }
                 return []
             },
@@ -82,5 +80,15 @@ extension Component {
             length: erased.length,
             body: self
         )
+    }
+}
+
+extension ComponentBase {
+    static var reuseIdentifier: String {
+        return String(describing: ObjectIdentifier(self))
+    }
+
+    var reuseIdentifier: String {
+        return Self.reuseIdentifier
     }
 }

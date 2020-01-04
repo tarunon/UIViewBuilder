@@ -22,7 +22,7 @@ struct VStackConfig: StackConfig {
 class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewProtocol {
     var body: Body {
         didSet {
-            update(changes: body.traverse(oldValue: oldValue))
+            stackView.update(differences: body.claim(oldValue: oldValue), natives: &natives, parent: parent)
         }
     }
     lazy var natives = self.body.create()
@@ -48,29 +48,11 @@ class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewProtocol 
     }
 
     @inline(__always)
-    func unmount(from target: Mountable, at index: Int) {
-        target.unmount(view: stackView, at: index)
-        natives.enumerated().reversed().forEach { (index, target) in
-            target.unmount(from: stackView, at: index)
-        }
+    func unmount(from target: Mountable) {
+        target.unmount(view: stackView)
+        natives.reversed().forEach { $0.unmount(from: stackView) }
         natives = []
         stackView = nil
-    }
-
-    func update(changes: [Change]) {
-        changes.forEach { change in
-            switch change.difference {
-            case .remove:
-                natives[change.index].unmount(from: stackView, at: change.index)
-                natives.remove(at: change.index)
-            case .insert(let component):
-                let native = component.create()[0]
-                native.mount(to: stackView, at: change.index, parent: parent)
-                natives.insert(native, at: change.index)
-            case .update(let component):
-                component.asAnyComponent().update(native: natives[change.index])
-            }
-        }
     }
 }
 
@@ -87,11 +69,11 @@ extension StackComponent {
     }
 
     @inline(__always)
-    func traverse(oldValue: Self?) -> [Change] {
+    func claim(oldValue: Self?) -> [Difference] {
         if oldValue != nil {
-            return [Change(index: 0, difference: .update(self))]
+            return [Difference(index: 0, change: .update(self))]
         }
-        return [Change(index: 0, difference: .insert(self))]
+        return [Difference(index: 0, change: .insert(self))]
     }
 
     @inline(__always)
@@ -156,12 +138,12 @@ extension UIStackView: Mountable {
         insertArrangedViewController(viewController, at: index, parentViewController: parent)
     }
 
-    func unmount(view: UIView?, at index: Int) {
-        view.map(removeArrangedSubview)
-        view?.removeFromSuperview()
+    func unmount(view: UIView) {
+        removeArrangedSubview(view)
+        view.removeFromSuperview()
     }
 
-    func unmount(viewController: UIViewController?, at index: Int) {
-        viewController.map(removeArrangedViewController)
+    func unmount(viewController: UIViewController) {
+        removeArrangedViewController(viewController)
     }
 }

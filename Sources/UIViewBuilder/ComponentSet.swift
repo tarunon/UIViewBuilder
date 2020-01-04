@@ -55,7 +55,7 @@ extension ComponentSet.Empty: ComponentBase, _Component {
     }
 
     @inline(__always)
-    func traverse(oldValue: ComponentSet.Empty?) -> [Change] {
+    func claim(oldValue: ComponentSet.Empty?) -> [Difference] {
         []
     }
 
@@ -77,9 +77,9 @@ extension ComponentSet.Pair: ComponentBase, _Component where C0: ComponentBase, 
     }
 
     @inline(__always)
-    func traverse(oldValue: ComponentSet.Pair<C0, C1>?) -> [Change] {
-        c0.traverse(oldValue: oldValue?.c0) +
-            c1.traverse(oldValue: oldValue?.c1).map { $0.with(offset: c0.length()) }
+    func claim(oldValue: ComponentSet.Pair<C0, C1>?) -> [Difference] {
+        c0.claim(oldValue: oldValue?.c0) +
+            c1.claim(oldValue: oldValue?.c1).map { $0.with(offset: c0.length()) }
     }
 
     @inline(__always)
@@ -100,23 +100,23 @@ extension ComponentSet.Either: ComponentBase, _Component where C0: ComponentBase
     }
 
     @inline(__always)
-    func traverse(oldValue: ComponentSet.Either<C0, C1>?) -> [Change] {
-        var result = [Change]()
+    func claim(oldValue: ComponentSet.Either<C0, C1>?) -> [Difference] {
+        var result = [Difference]()
         switch (self, oldValue) {
         case (.c0(let c0), .c0(let oldValue)):
-            result += c0.traverse(oldValue: oldValue)
+            result += c0.claim(oldValue: oldValue)
         case (.c1(let c1), .c1(let oldValue)):
-            result += c1.traverse(oldValue: oldValue)
+            result += c1.claim(oldValue: oldValue)
         case (.c0(let c0), .c1(let oldValue)):
-            result += (0..<oldValue.length()).reversed().map { Change(index: $0, difference: .remove) }
+            result += (0..<oldValue.length()).reversed().map { Difference(index: $0, change: .remove) }
             fallthrough
         case (.c0(let c0), .none):
-            result += c0.traverse(oldValue: nil)
+            result += c0.claim(oldValue: nil)
         case (.c1(let c1), .c0(let oldValue)):
-            result += (0..<oldValue.length()).reversed().map { Change(index: $0, difference: .remove) }
+            result += (0..<oldValue.length()).reversed().map { Difference(index: $0, change: .remove) }
             fallthrough
         case (.c1(let c1), .none):
-            result += c1.traverse(oldValue: nil)
+            result += c1.claim(oldValue: nil)
         }
         return result
     }

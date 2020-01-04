@@ -7,108 +7,44 @@
 
 import UIKit
 
-public protocol UIViewRepresentable: ComponentBase, Equatable {
-    associatedtype View: UIView
-    func create() -> View
-    func update(native: View)
+public protocol NativeRepresentable: ComponentBase, Equatable {
+    associatedtype Native
+    func create() -> Native
+    func update(native: Native)
+}
+
+extension NativeRepresentable {
+    func traverse(oldValue: Self?) -> [Difference] {
+        if let oldValue = oldValue {
+            if self != oldValue {
+                return [Difference(index: 0, change: .update(self))]
+            }
+            return []
+        }
+        return [Difference(index: 0, change: .insert(self))]
+    }
+}
+
+public protocol UIViewRepresentable: NativeRepresentable where Native: UIView {
+    func create() -> Native
+    func update(native: Native)
 }
 
 extension UIViewRepresentable {
     @inline(__always)
     public func asAnyComponent() -> AnyComponent {
-        AnyComponent(
-            create: {
-                [ViewWrapper(creation: self.create)]
-            },
-            traverse: { (oldValue) in
-                if let oldValue = oldValue {
-                    if self != oldValue {
-                        return [Change(index: 0, difference: .update(self))]
-                    }
-                    return []
-                } else {
-                    return [Change(index: 0, difference: .insert(self.asAnyComponent()))]
-                }
-            },
-            update: {
-                self.update(native: ($0 as! ViewWrapper<View>).view)
-            },
-            length: {
-                1
-            },
-            body: self
-        )
+        AnyComponent(body: self)
     }
 }
 
-class ViewWrapper<View: UIView>: NativeViewProtocol {
-    var creation: () -> View
-    lazy var view = self.creation()
-
-    init(creation: @escaping () -> View) {
-        self.creation = creation
-    }
-
-    @inline(__always)
-    func mount(to target: Mountable, at index: Int, parent: UIViewController) {
-        target.mount(view: view, at: index)
-    }
-
-    @inline(__always)
-    func unmount(from target: Mountable, at index: Int) {
-        target.unmount(view: view, at: index)
-    }
-}
-
-public protocol UIViewControllerRepresentable: ComponentBase, Equatable {
-    associatedtype ViewController: UIViewController
-    func create() -> ViewController
-    func update(native: ViewController)
+public protocol UIViewControllerRepresentable: NativeRepresentable where Native: UIViewController {
+    func create() -> Native
+    func update(native: Native)
 }
 
 extension UIViewControllerRepresentable {
     @inline(__always)
     public func asAnyComponent() -> AnyComponent {
-        AnyComponent(
-            create: {
-                [ViewControllerWrapper(creation: self.create)]
-            },
-            traverse: { (oldValue) -> [Change] in
-                if let oldValue = oldValue {
-                    if self != oldValue {
-                        return [Change(index: 0, difference: .update(self))]
-                    }
-                    return []
-                } else {
-                    return [Change(index: 0, difference: .insert(self.asAnyComponent()))]
-                }
-            },
-            update: {
-                self.update(native: ($0 as! ViewControllerWrapper<ViewController>).viewController)
-            },
-            length: {
-                1
-            },
-            body: self
-        )
-    }
-}
-
-class ViewControllerWrapper<ViewController: UIViewController>: NativeViewProtocol {
-    var creation: () -> ViewController
-    lazy var viewController = self.creation()
-
-    init(creation: @escaping () -> ViewController) {
-        self.creation = creation
-    }
-
-    @inline(__always)
-    func mount(to target: Mountable, at index: Int, parent: UIViewController) {
-        target.mount(viewController: viewController, at: index, parent: parent)
-    }
-
-    @inline(__always)
-    func unmount(from target: Mountable, at index: Int) {
-        target.unmount(viewController: viewController, at: index)
+        AnyComponent(body: self)
     }
 }

@@ -39,22 +39,13 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
     }
 
     struct Reducer {
-        var changes: [Change]
-        var fixedNewData: [Data.Element]
+        var changes: [Difference]
+        var fixedNewComponents: [(component: Component, length: Int)]
         var fixedOldData: [Data.Element?]
-        var creation: (Data.Element) -> Component
-
-        var fixedNewComponents: [Component] {
-            fixedNewData.map(creation)
-        }
-
-        var fixedOldComponents: [Component] {
-            fixedOldData.compactMap { $0 }.map(creation)
-        }
     }
 
     @inline(__always)
-    func traverse(oldValue: ForEach?) -> [Change] {
+    func claim(oldValue: ForEach?) -> [Difference] {
         guard #available(iOS 13, *) else {
             return updateLegacy(oldValue: oldValue)
         }
@@ -62,25 +53,32 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
 
         let diff = data.map { $0[keyPath: identify] }.difference(from: oldData.map { $0[keyPath: identify] })
 
-        let reducer = diff.reduce(into: Reducer(changes: [Change](), fixedNewData: oldData, fixedOldData: oldData, creation: creation)) { (result, change) in
-            let viewIndex = result.fixedNewComponents[0..<change.offset].map { $0.length() }.reduce(0, +)
+        let reducer = diff.reduce(
+            into: Reducer(
+                changes: [Difference](),
+                fixedNewComponents: oldData.map(creation).map { ($0, $0.length()) },
+                fixedOldData: oldData
+            )
+        ) { (result, change) in
+            let viewIndex = result.fixedNewComponents[0..<change.offset].map { $0.length }.reduce(0, +)
             switch change {
             case .insert(let offset, _, _):
                 result.fixedOldData.insert(nil, at: offset)
-                result.fixedNewData.insert(data[offset], at: offset)
-                result.changes += result.fixedNewComponents[change.offset].traverse(oldValue: nil).map { $0.with(offset: viewIndex) }
+                let component = creation(data[offset])
+                result.fixedNewComponents.insert((component, component.length()), at: offset)
+                result.changes += result.fixedNewComponents[change.offset].component.claim(oldValue: nil).map { $0.with(offset: viewIndex) }
             case .remove(let offset, _, _):
-                result.changes += (viewIndex..<viewIndex + result.fixedNewComponents[change.offset].length()).reversed().map { Change(index: $0, difference: .remove) }
+                result.changes += (viewIndex..<viewIndex + result.fixedNewComponents[change.offset].length).reversed().map { Difference(index: $0, change: .remove) }
                 result.fixedOldData.remove(at: offset)
-                result.fixedNewData.remove(at: offset)
+                result.fixedNewComponents.remove(at: offset)
             }
         }
 
-        return reducer.changes + zip(data, reducer.fixedOldData).reduce(into: (viewIndex: 0, changes: [Change]())) { (result, value) in
+        return reducer.changes + zip(data, reducer.fixedOldData).reduce(into: (viewIndex: 0, changes: [Difference]())) { (result, value) in
             let (element, oldValue) = value
             let component = creation(element)
             if let oldValue = oldValue {
-                result.changes += component.asAnyComponent().traverse(oldValue: creation(oldValue).asAnyComponent()).map { $0.with(offset: result.viewIndex) }
+                result.changes += component.asAnyComponent().claim(oldValue: creation(oldValue).asAnyComponent()).map { $0.with(offset: result.viewIndex) }
             }
             result.viewIndex += component.length()
         }.changes
@@ -88,7 +86,7 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
 
 
     @inline(__always)
-    func updateLegacy(oldValue: ForEach?) -> [Change] {
+    func updateLegacy(oldValue: ForEach?) -> [Difference] {
         fatalError()
     }
 
