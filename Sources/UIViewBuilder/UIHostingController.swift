@@ -34,7 +34,7 @@ public class _UIHostingController<Component: ComponentBase>: UIViewController {
 
         override func layoutSubviews() {
             if let parent = parent, parent.oldComponent != nil {
-                stackView.update(differences: parent.component.claim(oldValue: parent.oldComponent), natives: &parent.natives, parent: parent)
+                stackView.update(differences: parent.component.claim(oldValue: parent.oldComponent), natives: &parent.natives, cache: parent.cache, parent: parent)
                 parent.oldComponent = nil
             }
             super.layoutSubviews()
@@ -46,6 +46,7 @@ public class _UIHostingController<Component: ComponentBase>: UIViewController {
     public lazy var component = self.creation()
     lazy var _view = View(parent: self)
     lazy var natives = self.component.create()
+    let cache = NativeViewCache()
 
     public init(_ component: @autoclosure @escaping () -> Component) {
         self.creation = component

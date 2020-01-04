@@ -22,9 +22,10 @@ struct VStackConfig: StackConfig {
 class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewProtocol {
     var body: Body {
         didSet {
-            stackView.update(differences: body.claim(oldValue: oldValue), natives: &natives, parent: parent)
+            stackView.update(differences: body.claim(oldValue: oldValue), natives: &natives, cache: cache, parent: parent)
         }
     }
+    let cache = NativeViewCache()
     lazy var natives = self.body.create()
     var stackView: UIStackView!
     var parent: UIViewController!

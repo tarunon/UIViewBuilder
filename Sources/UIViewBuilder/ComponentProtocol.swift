@@ -15,7 +15,7 @@ struct Difference {
     enum Change {
         case insert(ComponentBase)
         case update(ComponentBase)
-        case remove
+        case remove(ComponentBase)
     }
     var index: Int
     var change: Change

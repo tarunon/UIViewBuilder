@@ -68,7 +68,7 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
                 result.fixedNewComponents.insert((component, component.length()), at: offset)
                 result.changes += result.fixedNewComponents[change.offset].component.claim(oldValue: nil).map { $0.with(offset: viewIndex) }
             case .remove(let offset, _, _):
-                result.changes += (viewIndex..<viewIndex + result.fixedNewComponents[change.offset].length).reversed().map { Difference(index: $0, change: .remove) }
+                result.changes += (viewIndex..<viewIndex + result.fixedNewComponents[change.offset].length).reversed().map { Difference(index: $0, change: .remove(result.fixedNewComponents[offset].component)) }
                 result.fixedOldData.remove(at: offset)
                 result.fixedNewComponents.remove(at: offset)
             }

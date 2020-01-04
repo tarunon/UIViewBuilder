@@ -14,15 +14,32 @@ protocol Mountable {
     func unmount(view: UIView)
 }
 
+class NativeViewCache {
+    var reuseQueue: [String: [NativeViewProtocol]] = [:]
+
+    func dequeue(component: ComponentBase) -> NativeViewProtocol? {
+        guard let native = reuseQueue[component.reuseIdentifier]?.popLast() else {
+            return nil
+        }
+        component.update(native: native)
+        return native
+    }
+
+    func enqueue(component: ComponentBase, native: NativeViewProtocol) {
+        reuseQueue[component.reuseIdentifier, default: []].append(native)
+    }
+}
+
 extension Mountable {
-    func update(differences: [Difference], natives: inout [NativeViewProtocol], parent: UIViewController) {
+    func update(differences: [Difference], natives: inout [NativeViewProtocol], cache: NativeViewCache, parent: UIViewController) {
         differences.forEach { difference in
             switch difference.change {
-            case .remove:
+            case .remove(let component):
                 natives[difference.index].unmount(from: self)
-                natives.remove(at: difference.index)
+                let native = natives.remove(at: difference.index)
+                cache.enqueue(component: component, native: native)
             case .insert(let component):
-                let native = component.create()[0]
+                let native = cache.dequeue(component: component) ?? component.create()[0]
                 native.mount(to: self, at: difference.index, parent: parent)
                 natives.insert(native, at: difference.index)
             case .update(let component):
