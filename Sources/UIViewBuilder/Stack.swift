@@ -19,64 +19,90 @@ struct VStackConfig: StackConfig {
     public static let axis: NSLayoutConstraint.Axis = .vertical
 }
 
-class NativeStack<Config: StackConfig>: NativeViewProtocol {
-    let creation: (NativeViewProtocol?) -> NativeViewProtocol
-    lazy var component = self.creation(nil)
+class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewProtocol {
+    var body: Body {
+        didSet {
+            update(changes: body.traverse(oldValue: oldValue))
+        }
+    }
+    lazy var natives = self.body.create()
     var stackView: UIStackView!
+    var parent: UIViewController!
 
-    init(config: Config.Type, creation: @escaping (NativeViewProtocol?) -> NativeViewProtocol, prev: NativeViewProtocol?) {
-        self.creation = creation
-        self.prev = prev
-    }
-
-    var prev: NativeViewProtocol?
-
-    @inline(__always)
-    var length: Int {
-        stackView.superview == nil ? 0 : 1
+    init(config: Config.Type, body: Body) {
+        self.body = body
     }
 
     @inline(__always)
-    func mount(to target: Mountable, parent: UIViewController) {
-        if self.stackView == nil {
+    func mount(to target: Mountable, at index: Int, parent: UIViewController) {
+        self.parent = parent
+        if stackView == nil {
             stackView = UIStackView()
             stackView.axis = Config.axis
-            target.mount(view: stackView, index: offset)
+            stackView.translatesAutoresizingMaskIntoConstraints = false
+            natives.enumerated().forEach { (index, target) in
+                target.mount(to: stackView, at: index, parent: parent)
+            }
         }
-        component.mount(to: stackView, parent: parent)
+        target.mount(view: stackView, at: index)
     }
 
     @inline(__always)
-    func unmount(from target: Mountable) {
-        target.unmount(view: stackView)
+    func unmount(from target: Mountable, at index: Int) {
+        target.unmount(view: stackView, at: index)
+        natives.enumerated().reversed().forEach { (index, target) in
+            target.unmount(from: stackView, at: index)
+        }
+        natives = []
+        stackView = nil
+    }
+
+    func update(changes: [Change]) {
+        changes.forEach { change in
+            switch change.difference {
+            case .remove:
+                natives[change.index].unmount(from: stackView, at: change.index)
+                natives.remove(at: change.index)
+            case .insert(let component):
+                let native = component.create()[0]
+                native.mount(to: stackView, at: change.index, parent: parent)
+                natives.insert(native, at: change.index)
+            case .update(let component):
+                component.asAnyComponent().update(native: natives[change.index])
+            }
+        }
     }
 }
 
 protocol StackComponent: _Component {
     associatedtype Config: StackConfig
     associatedtype Body: ComponentBase
-    associatedtype NativeView = NativeStack<Config>
     var body: Body { get }
 }
 
-extension StackComponent where NativeView == NativeStack<Config> {
+extension StackComponent {
     @inline(__always)
-    func create(prev: NativeViewProtocol?) -> NativeView {
-        NativeStack(config: Config.self, creation: self.body.create, prev: prev)
+    func create() -> [NativeViewProtocol] {
+        [NativeStack(config: Config.self, body: self.body)]
     }
 
     @inline(__always)
-    func update(native: NativeView, oldValue: Self?) -> [Mount] {
-        body.update(native: native.component, oldValue: oldValue?.body).map { f in
-            return { stackView, native0 in
-                f(native.stackView ?? stackView, native0)
-            }
+    func traverse(oldValue: Self?) -> [Change] {
+        if oldValue != nil {
+            return [Change(index: 0, difference: .update(self))]
         }
+        return [Change(index: 0, difference: .insert(self))]
     }
 
     @inline(__always)
-    func enumerate() -> [ComponentBase] {
-        [self]
+    func update(native: NativeViewProtocol) {
+        let native = native as! NativeStack<Body, Config>
+        native.body = body
+    }
+
+    @inline(__always)
+    func length() -> Int {
+        return 1
     }
 }
 
@@ -122,20 +148,20 @@ extension UIStackView {
 }
 
 extension UIStackView: Mountable {
-    func mount(view: UIView, index: Int) {
+    func mount(view: UIView, at index: Int) {
         insertArrangedSubview(view, at: index)
     }
 
-    func mount(viewController: UIViewController, index: Int, parent: UIViewController) {
+    func mount(viewController: UIViewController, at index: Int, parent: UIViewController) {
         insertArrangedViewController(viewController, at: index, parentViewController: parent)
     }
 
-    func unmount(view: UIView) {
-        removeArrangedSubview(view)
-        view.removeFromSuperview()
+    func unmount(view: UIView?, at index: Int) {
+        view.map(removeArrangedSubview)
+        view?.removeFromSuperview()
     }
 
-    func unmount(viewController: UIViewController) {
-        removeArrangedViewController(viewController)
+    func unmount(viewController: UIViewController?, at index: Int) {
+        viewController.map(removeArrangedViewController)
     }
 }

@@ -7,51 +7,21 @@
 
 import UIKit
 
-final class AnyNativeView: NativeViewProtocol {
-    var body: NativeViewProtocol
-    init(body: NativeViewProtocol) {
-        self.body = body
-    }
-
-    @inline(__always)
-    var prev: NativeViewProtocol? {
-        get {
-            body.prev
-        }
-        set {
-            body.prev = newValue
-        }
-    }
-
-    @inline(__always)
-    var length: Int {
-        body.length
-    }
-
-    @inline(__always)
-    func mount(to target: Mountable, parent: UIViewController) {
-        body.mount(to: target, parent: parent)
-    }
-
-    @inline(__always)
-    func unmount(from target: Mountable) {
-        body.unmount(from: target)
-    }
-}
-
 public struct AnyComponent: ComponentBase, _Component {
-    typealias NativeView = AnyNativeView
-
     class Base: _Component {
-        func create(prev: NativeViewProtocol?) -> AnyNativeView {
+        func create() -> [NativeViewProtocol] {
             fatalError()
         }
 
-        func update(native: AnyNativeView, oldValue: Base?) -> [Mount] {
+        func traverse(oldValue: AnyComponent.Base?) -> [Change] {
             fatalError()
         }
 
-        func enumerate() -> [ComponentBase] {
+        func update(native: NativeViewProtocol) {
+            fatalError()
+        }
+
+        func length() -> Int {
             fatalError()
         }
 
@@ -69,46 +39,63 @@ public struct AnyComponent: ComponentBase, _Component {
 
     final class GenericBox<Body: ComponentBase & _Component>: Box<Body> {
         @inline(__always)
-        override func create(prev: NativeViewProtocol?) -> AnyNativeView {
-            AnyNativeView(body: body.create(prev: prev))
+        override func create() -> [NativeViewProtocol] {
+            body.create()
         }
 
         @inline(__always)
-        override func update(native: AnyNativeView, oldValue: Base?) -> [Mount] {
-            body.update(native: native.body as! Body.NativeView, oldValue: oldValue?.as(Body.self))
+        override func traverse(oldValue: AnyComponent.Base?) -> [Change] {
+            body.traverse(oldValue: oldValue?.as(Body.self))
         }
 
         @inline(__always)
-        override func enumerate() -> [ComponentBase] {
-            body.enumerate()
+        override func update(native: NativeViewProtocol) {
+            body.update(native: native)
+        }
+
+        @inline(__always)
+        override func length() -> Int {
+            body.length()
         }
     }
 
-    final class ClosureBox<Body: ComponentBase>: Box<Body> {
-        var _create: (NativeViewProtocol?) -> AnyNativeView
-        var _update: (AnyNativeView, AnyComponent?) -> [Mount]
-        var _enumerate: () -> [ComponentBase]
+    typealias Create = () -> [NativeViewProtocol]
+    typealias Traverse<Component> = (Component?) -> [Change]
+    typealias Update = (NativeViewProtocol) -> ()
+    typealias Length = () -> Int
 
-        init<NativeView: NativeViewProtocol>(create: @escaping (NativeViewProtocol?) -> NativeView, update: @escaping (NativeView, Body?) -> [Mount], enumerate: @escaping () -> [ComponentBase], body: Body) {
-            self._create = { AnyNativeView(body: create($0)) }
-            self._update = { update($0.body as! NativeView, $1?.box.as(Body.self)) }
-            self._enumerate = enumerate
+    final class ClosureBox<Body: ComponentBase>: Box<Body> {
+        var _create: Create
+        var _traverse: Traverse<Base>
+        var _update: Update
+        var _length: Length
+
+        init(create: @escaping Create, traverse: @escaping Traverse<Body>, update: @escaping Update, length: @escaping Length, body: Body) {
+            self._create = create
+            self._traverse = { traverse($0?.as(Body.self)) }
+            self._update = update
+            self._length = length
             super.init(body: body)
         }
 
         @inline(__always)
-        override func create(prev: NativeViewProtocol?) -> AnyNativeView {
-            _create(prev)
+        override func create() -> [NativeViewProtocol] {
+            _create()
         }
 
         @inline(__always)
-        override func update(native: AnyNativeView, oldValue: Base?) -> [Mount] {
-            _update(native, oldValue.map(AnyComponent.init))
+        override func update(native: NativeViewProtocol) {
+            _update(native)
         }
 
         @inline(__always)
-        override func enumerate() -> [ComponentBase] {
-            _enumerate()
+        override func traverse(oldValue: AnyComponent.Base?) -> [Change] {
+            _traverse(oldValue)
+        }
+
+        @inline(__always)
+        override func length() -> Int {
+            _length()
         }
     }
 
@@ -118,30 +105,31 @@ public struct AnyComponent: ComponentBase, _Component {
         self = creation().asAnyComponent()
     }
 
-    init(box: Base) {
-        self.box = box
-    }
-
     init<Body: ComponentBase & _Component>(body: Body) {
         self.box = GenericBox(body: body)
     }
 
-    init<NativeView: NativeViewProtocol, Body: ComponentBase>(create: @escaping (NativeViewProtocol?) -> NativeView, update: @escaping (NativeView, Body?) -> [Mount], enumerate: @escaping () -> [ComponentBase], body: Body) {
-        self.box = ClosureBox(create: create, update: update, enumerate: enumerate, body: body)
+    init<Body: ComponentBase>(create: @escaping Create, traverse: @escaping Traverse<Body>, update: @escaping Update, length: @escaping Length, body: Body) {
+        self.box = ClosureBox(create: create, traverse: traverse, update: update, length: length, body: body)
     }
 
     @inline(__always)
-    func create(prev: NativeViewProtocol?) -> AnyNativeView {
-        box.create(prev: prev)
+    func create() -> [NativeViewProtocol] {
+        box.create()
     }
 
     @inline(__always)
-    func update(native: AnyNativeView, oldValue: AnyComponent?) -> [Mount] {
-        box.update(native: native, oldValue: oldValue?.box)
+    func traverse(oldValue: AnyComponent?) -> [Change] {
+        box.traverse(oldValue: oldValue?.box)
     }
 
     @inline(__always)
-    func enumerate() -> [ComponentBase] {
-        box.enumerate()
+    func update(native: NativeViewProtocol) {
+        box.update(native: native)
+    }
+
+    @inline(__always)
+    func length() -> Int {
+        box.length()
     }
 }

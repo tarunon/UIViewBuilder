@@ -10,7 +10,7 @@ import UIViewBuilder
 
 fileprivate extension UIHostingController {
     func visibleViews() -> [UIView] {
-        (children.first as! UITableViewController).tableView.visibleCells.compactMap { $0.contentView.subviews.first?.subviews.first }
+        (children.first as! UITableViewController).tableView.visibleCells.flatMap { $0.contentView.subviews.first?.subviews ?? [] }
     }
 }
 
@@ -315,11 +315,6 @@ class ListTests: XCTestCase {
             vc.visibleViews().map { ($0 as! UILabel).text },
             fixture.map { $0.text }
         )
-// TODO: Implement difference update
-//        XCTAssertEqual(
-//            expectedNativeIds,
-//            vc.visibleViews()[4..<7].map { ObjectIdentifier($0) }
-//        )
 
         fixture = [
             TestComponent.Identified(id: 1, text: "a"),
@@ -333,11 +328,6 @@ class ListTests: XCTestCase {
         XCTAssertEqual(
             vc.visibleViews().map { ($0 as! UILabel).text },
             fixture.map { $0.text }
-        )
-
-        XCTAssertEqual(
-            expectedNativeIds,
-            vc.visibleViews().map { ObjectIdentifier($0) }
         )
     }
 

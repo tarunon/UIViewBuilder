@@ -17,6 +17,20 @@ public enum ComponentSet {
     public enum Either<C0, C1> {
         case c0(C0)
         case c1(C1)
+
+        var c0: C0? {
+            switch self {
+            case .c0(let c0): return c0
+            default: return nil
+            }
+        }
+
+        var c1: C1? {
+            switch self {
+            case .c1(let c1): return c1
+            default: return nil
+            }
+        }
     }
 }
 
@@ -34,157 +48,89 @@ extension ComponentSet.Either where C1 == ComponentSet.Empty {
     }
 }
 
-final class NativeEmpty: NativeViewProtocol {
-    var prev: NativeViewProtocol?
-
-    init(prev: NativeViewProtocol?) {
-        self.prev = prev
-    }
-
-    @inline(__always)
-    var length: Int {
-        0
-    }
-
-    @inline(__always)
-    func mount(to target: Mountable, parent: UIViewController) {
-
-    }
-
-    @inline(__always)
-    func unmount(from target: Mountable) {
-
-    }
-}
-
-class NativePair: NativeViewProtocol {
-    var c0: NativeViewProtocol?
-    var c1: NativeViewProtocol?
-
-    var prev: NativeViewProtocol?
-
-    init(c0: NativeViewProtocol?, c1: NativeViewProtocol?, prev: NativeViewProtocol?) {
-        self.c0 = c0
-        self.c1 = c1
-        self.prev = prev
-    }
-
-    @inline(__always)
-    var length: Int {
-        (c0?.length ?? 0) + (c1?.length ?? 0)
-    }
-
-    @inline(__always)
-    func mount(to target: Mountable, parent: UIViewController) {
-        if let c0 = c0 {
-            c0.mount(to: target, parent: parent)
-        }
-        if let c1 = c1 {
-            c1.mount(to: target, parent: parent)
-        }
-    }
-
-    @inline(__always)
-    func unmount(from target: Mountable) {
-        c0?.unmount(from: target)
-        c1?.unmount(from: target)
-    }
-}
-
 extension ComponentSet.Empty: ComponentBase, _Component {
-    typealias NativeView = NativeEmpty
-    
     @inline(__always)
-    func create(prev: NativeViewProtocol?) -> NativeEmpty {
-        .init(prev: prev)
-    }
-
-    @inline(__always)
-    func update(native: NativeEmpty, oldValue: ComponentSet.Empty?) -> [Mount] {
+    func create() -> [NativeViewProtocol] {
         []
     }
 
-    func enumerate() -> [ComponentBase] {
+    @inline(__always)
+    func traverse(oldValue: ComponentSet.Empty?) -> [Change] {
         []
+    }
+
+    @inline(__always)
+    func update(native: NativeViewProtocol) {
+
+    }
+
+    @inline(__always)
+    func length() -> Int {
+        0
     }
 }
 
 extension ComponentSet.Pair: ComponentBase, _Component where C0: ComponentBase, C1: ComponentBase {
-    typealias NativeView = NativePair
-
     @inline(__always)
-    func create(prev: NativeViewProtocol?) -> NativePair {
-        let native0 = c0.create(prev: prev)
-        let native1 = c1.create(prev: native0)
-        return NativePair(c0: native0, c1: native1, prev: prev)
+    func create() -> [NativeViewProtocol] {
+        c0.create() + c1.create()
     }
 
     @inline(__always)
-    func update(native: NativePair, oldValue: ComponentSet.Pair<C0, C1>?) -> [Mount] {
-        c0.update(native: native.c0!, oldValue: oldValue?.c0)
-            + c1.update(native: native.c1!, oldValue: oldValue?.c1)
+    func traverse(oldValue: ComponentSet.Pair<C0, C1>?) -> [Change] {
+        c0.traverse(oldValue: oldValue?.c0) +
+            c1.traverse(oldValue: oldValue?.c1).map { $0.with(offset: c0.length()) }
     }
 
     @inline(__always)
-    func enumerate() -> [ComponentBase] {
-        c0.asAnyComponent().enumerate() + c1.asAnyComponent().enumerate()
+    func update(native: NativeViewProtocol) {
+        fatalError()
+    }
+
+    @inline(__always)
+    func length() -> Int {
+        c0.length() + c1.length()
     }
 }
 
 extension ComponentSet.Either: ComponentBase, _Component where C0: ComponentBase, C1: ComponentBase {
-    typealias NativeView = NativePair
-
     @inline(__always)
-    func create(prev: NativeViewProtocol?) -> NativePair {
-        switch self {
-        case .c0(let c0):
-            return .init(c0: c0.create(prev: prev), c1: nil, prev: prev)
-        case .c1(let c1):
-            return .init(c0: nil, c1: c1.create(prev: prev), prev: prev)
-        }
+    func create() -> [NativeViewProtocol] {
+        c0?.create() ?? c1?.create() ?? []
     }
 
     @inline(__always)
-    func update(native: NativePair, oldValue: ComponentSet.Either<C0, C1>?) -> [Mount] {
+    func traverse(oldValue: ComponentSet.Either<C0, C1>?) -> [Change] {
+        var result = [Change]()
         switch (self, oldValue) {
-        case (.c0(let c0), .c0(let oldValue0)):
-            return c0.update(native: native.c0!, oldValue: oldValue0)
-        case (.c1(let c1), .c1(let oldValue1)):
-            return c1.update(native: native.c1!, oldValue: oldValue1)
-        case (.c0(let c0), _):
-            var mounts = [Mount]()
-            if let native0 = native.c0 {
-                mounts += c0.update(native: native0, oldValue: nil)
-            } else {
-                native.c0 = c0.create(prev: native.prev)
-            }
-            return mounts + [
-                { stackView, parent in
-                    native.c1?.unmount(from: stackView)
-                    native.c0?.mount(to: stackView, parent: parent)
-                }
-            ]
-        case (.c1(let c1), _):
-            var mounts = [Mount]()
-            if let native1 = native.c1 {
-                 mounts += c1.update(native: native1, oldValue: nil)
-            } else {
-                native.c1 = c1.create(prev: native.prev)
-            }
-            return mounts + [
-                { stackView, parent in
-                    native.c0?.unmount(from: stackView)
-                    native.c1?.mount(to: stackView, parent: parent)
-                }
-            ]
+        case (.c0(let c0), .c0(let oldValue)):
+            result += c0.traverse(oldValue: oldValue)
+        case (.c1(let c1), .c1(let oldValue)):
+            result += c1.traverse(oldValue: oldValue)
+        case (.c0(let c0), .c1(let oldValue)):
+            result += (0..<oldValue.length()).reversed().map { Change(index: $0, difference: .remove) }
+            fallthrough
+        case (.c0(let c0), .none):
+            result += c0.traverse(oldValue: nil)
+        case (.c1(let c1), .c0(let oldValue)):
+            result += (0..<oldValue.length()).reversed().map { Change(index: $0, difference: .remove) }
+            fallthrough
+        case (.c1(let c1), .none):
+            result += c1.traverse(oldValue: nil)
         }
+        return result
     }
 
     @inline(__always)
-    func enumerate() -> [ComponentBase] {
+    func update(native: NativeViewProtocol) {
+        fatalError()
+    }
+
+    @inline(__always)
+    func length() -> Int {
         switch self {
-        case .c0(let c0): return c0.asAnyComponent().enumerate()
-        case .c1(let c1): return c1.asAnyComponent().enumerate()
+        case .c0(let c0): return c0.length()
+        case .c1(let c1): return c1.length()
         }
     }
 }

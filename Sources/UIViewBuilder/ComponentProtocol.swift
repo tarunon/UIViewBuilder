@@ -13,24 +13,47 @@ public protocol ComponentBase {
     func asAnyComponent() -> AnyComponent
 }
 
+struct Change {
+    enum Difference {
+        case insert(ComponentBase)
+        case update(ComponentBase)
+        case remove
+    }
+    var index: Int
+    var difference: Difference
+
+    func with(offset: Int) -> Change {
+        Change(index: index + offset, difference: difference)
+    }
+}
+
 extension ComponentBase {
     @inline(__always)
-    func create(prev: NativeViewProtocol?) -> NativeViewProtocol {
-        asAnyComponent().create(prev: prev)
+    func create() -> [NativeViewProtocol] {
+        asAnyComponent().create()
     }
 
     @inline(__always)
-    func update(native: NativeViewProtocol, oldValue: Self?) -> [Mount] {
-        asAnyComponent().update(native: native as! AnyNativeView, oldValue: oldValue?.asAnyComponent())
+    func traverse(oldValue: Self?) -> [Change] {
+        asAnyComponent().traverse(oldValue: oldValue?.asAnyComponent())
+    }
+
+    @inline(__always)
+    func update(native: NativeViewProtocol) {
+        asAnyComponent().update(native: native)
+    }
+
+    @inline(__always)
+    func length() -> Int {
+        asAnyComponent().length()
     }
 }
 
 protocol _Component: ComponentBase {
-    associatedtype NativeView: NativeViewProtocol
-
-    func create(prev: NativeViewProtocol?) -> NativeView
-    func update(native: NativeView, oldValue: Self?) -> [Mount]
-    func enumerate() -> [ComponentBase]
+    func create() -> [NativeViewProtocol]
+    func traverse(oldValue: Self?) -> [Change]
+    func update(native: NativeViewProtocol)
+    func length() -> Int
 }
 
 extension _Component {
@@ -49,13 +72,14 @@ extension Component {
         let erased = body.asAnyComponent()
         return AnyComponent(
             create: erased.create,
-            update: { (native, oldValue) -> [Mount] in
+            traverse: { (oldValue) -> [Change] in
                 if self != oldValue {
-                    return erased.update(native: native, oldValue: oldValue?.body.asAnyComponent())
+                    return erased.traverse(oldValue: oldValue?.body.asAnyComponent())
                 }
                 return []
             },
-            enumerate: erased.enumerate,
+            update: erased.update,
+            length: erased.length,
             body: self
         )
     }

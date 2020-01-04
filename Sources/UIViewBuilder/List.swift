@@ -22,10 +22,10 @@ fileprivate extension ComponentBase {
 }
 
 class NativeCell<Body: ComponentBase>: UITableViewCell, Mountable {
-    var native: NativeViewProtocol!
     weak var parentViewController: UIViewController?
     var contentViewController: UIViewController?
     var oldComponent: Body?
+    var natives: [NativeViewProtocol]!
     lazy var stackView: UIStackView = {
         let stackView = UIStackView()
         stackView.axis = .horizontal
@@ -67,43 +67,52 @@ class NativeCell<Body: ComponentBase>: UITableViewCell, Mountable {
         }
     }
 
+    override func prepareForReuse() {
+        super.prepareForReuse()
+    }
+
     func render(body: Body, parent: UIViewController) {
-        if let native = native {
-            body.update(native: native, oldValue: oldComponent).forEach { f in
-                f(self, parent)
+        if natives == nil {
+            natives = body.create()
+            natives.enumerated().forEach { index, native in
+                native.mount(to: self, at: index, parent: parent)
             }
         } else {
-            native = body.create(prev: nil)
-            native.mount(to: self, parent: parent)
+            update(changes: body.traverse(oldValue: oldComponent), natives: &natives, parent: parent)
         }
     }
 
-    func mount(view: UIView, index: Int) {
-        stackView.insertArrangedSubview(view, at: index)
+    func mount(view: UIView, at index: Int) {
+        stackView.insertSubview(view, at: index)
     }
 
-    func mount(viewController: UIViewController, index: Int, parent: UIViewController) {
-        stackView.insertArrangedSubview(viewController.view, at: index)
-        parentViewController = parent
+    func mount(viewController: UIViewController, at index: Int, parent: UIViewController) {
+        stackView.insertArrangedViewController(viewController, at: index, parentViewController: parent)
+        contentViewController = viewController
     }
 
-    func unmount(view: UIView) {
-        stackView.removeArrangedSubview(view)
-        view.removeFromSuperview()
+    func unmount(view: UIView?, at index: Int) {
+        view.map(stackView.removeArrangedSubview)
+        view?.removeFromSuperview()
     }
 
-    func unmount(viewController: UIViewController) {
-        stackView.removeArrangedSubview(viewController.view)
-        viewController.view.removeFromSuperview()
+    func unmount(viewController: UIViewController?, at index: Int) {
+        viewController?.view.map(stackView.removeArrangedSubview(_:))
+        viewController?.view.removeFromSuperview()
     }
 }
 
 class NativeList<Body: ComponentBase>: UITableViewController, NativeViewProtocol {
-    var body: Body
+    var body: Body {
+        didSet {
+            update(changes: body.traverse(oldValue: oldValue))
+        }
+    }
 
-    init(body: Body, prev: NativeViewProtocol?) {
+    var components: [ComponentBase] = []
+
+    init(body: Body) {
         self.body = body
-        self.prev = prev
         super.init(style: .plain)
     }
 
@@ -116,23 +125,35 @@ class NativeList<Body: ComponentBase>: UITableViewController, NativeViewProtocol
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        body.asAnyComponent().enumerate().forEach { $0.registerCell(to: self) }
-        tableView.reloadData()
+        tableView.beginUpdates()
+        update(changes: body.traverse(oldValue: nil))
+        tableView.endUpdates()
     }
 
-    @inline(__always)
-    var length: Int {
-        view.superview == nil ? 0 : 1
+    func update(changes: [Change]) {
+        changes.forEach { change in
+            switch change.difference {
+            case .remove:
+                components.remove(at: change.index)
+                tableView.deleteRows(at: [IndexPath(row: change.index, section: 0)], with: .automatic)
+            case .insert(let component):
+                component.registerCell(to: self)
+                components.insert(component, at: change.index)
+                tableView.insertRows(at: [IndexPath(row: change.index, section: 0)], with: .automatic)
+            case .update(let component):
+                component.registerCell(to: self)
+                components[change.index] = component
+                tableView.reloadRows(at: [IndexPath(row: change.index, section: 0)], with: .automatic)
+            }
+        }
     }
 
-    @inline(__always)
-    func mount(to target: Mountable, parent: UIViewController) {
-        target.mount(viewController: self, index: offset, parent: parent)
+    func mount(to target: Mountable, at index: Int, parent: UIViewController) {
+        target.mount(viewController: self, at: index, parent: parent)
     }
 
-    @inline(__always)
-    func unmount(from target: Mountable) {
-        target.unmount(viewController: self)
+    func unmount(from target: Mountable, at index: Int) {
+        target.unmount(viewController: self, at: index)
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
@@ -140,34 +161,30 @@ class NativeList<Body: ComponentBase>: UITableViewController, NativeViewProtocol
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        body.asAnyComponent().enumerate().count
+        components.count
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        body.asAnyComponent().enumerate()[indexPath.row].dequeueCell(from: self, indexPath: indexPath)
+        components[indexPath.row].dequeueCell(from: self, indexPath: indexPath)
     }
 }
 
 public struct List<Body: ComponentBase>: ComponentBase, _Component {
-    typealias NativeView = NativeList
-
     var body: Body
 
     public init(@ComponentBuilder creation: () -> Body) {
         self.body = creation()
     }
 
-    func create(prev: NativeViewProtocol?) -> NativeList<Body> {
-        NativeList(body: body, prev: prev)
+    func create() -> [NativeViewProtocol] {
+        [NativeList(body: body)]
     }
 
-    func update(native: NativeList<Body>, oldValue: List?) -> [Mount] {
-        native.body = body
-        native.tableView.reloadData()
-        return []
+    func traverse(oldValue: List?) -> [Change] {
+        return [Change(index: 0, difference: .update(self))]
     }
 
-    func enumerate() -> [ComponentBase] {
-        return [self]
+    func update(native: NativeViewProtocol) {
+        (native as! NativeList<Body>).body = body
     }
 }

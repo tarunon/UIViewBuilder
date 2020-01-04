@@ -8,23 +8,31 @@
 import UIKit
 
 protocol Mountable {
-    func mount(viewController: UIViewController, index: Int, parent: UIViewController)
-    func mount(view: UIView, index: Int)
-    func unmount(viewController: UIViewController)
-    func unmount(view: UIView)
+    func mount(viewController: UIViewController, at index: Int, parent: UIViewController)
+    func mount(view: UIView, at index: Int)
+    func unmount(viewController: UIViewController?, at index: Int)
+    func unmount(view: UIView?, at index: Int)
+}
+
+extension Mountable {
+    func update(changes: [Change], natives: inout [NativeViewProtocol], parent: UIViewController) {
+        changes.forEach { change in
+            switch change.difference {
+            case .remove:
+                natives[change.index].unmount(from: self, at: change.index)
+                natives.remove(at: change.index)
+            case .insert(let component):
+                let native = component.create()[0]
+                native.mount(to: self, at: change.index, parent: parent)
+                natives.insert(native, at: change.index)
+            case .update(let component):
+                component.update(native: natives[change.index])
+            }
+        }
+    }
 }
 
 protocol NativeViewProtocol: class {
-    var prev: NativeViewProtocol? { get set }
-    var offset: Int { get }
-    var length: Int { get }
-    func mount(to target: Mountable, parent: UIViewController)
-    func unmount(from target: Mountable)
-}
-
-extension NativeViewProtocol {
-    @inline(__always)
-    var offset: Int {
-        prev.map { $0.offset + $0.length } ?? 0
-    }
+    func mount(to target: Mountable, at index: Int, parent: UIViewController)
+    func unmount(from target: Mountable, at index: Int)
 }

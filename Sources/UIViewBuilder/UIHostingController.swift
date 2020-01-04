@@ -34,9 +34,7 @@ public class _UIHostingController<Component: ComponentBase>: UIViewController {
 
         override func layoutSubviews() {
             if let parent = parent, parent.oldComponent != nil {
-                parent.component.update(native: parent.native, oldValue: parent.oldComponent).forEach { f in
-                    f(stackView, parent)
-                }
+                stackView.update(changes: parent.component.traverse(oldValue: parent.oldComponent), natives: &parent.natives, parent: parent)
                 parent.oldComponent = nil
             }
             super.layoutSubviews()
@@ -46,8 +44,8 @@ public class _UIHostingController<Component: ComponentBase>: UIViewController {
     let creation: () -> Component
     var oldComponent: Component?
     public lazy var component = self.creation()
-    lazy var native = self.component.create(prev: nil)
     lazy var _view = View(parent: self)
+    lazy var natives = self.component.create()
 
     public init(_ component: @autoclosure @escaping () -> Component) {
         self.creation = component
@@ -64,14 +62,19 @@ public class _UIHostingController<Component: ComponentBase>: UIViewController {
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        native.mount(to: _view.stackView, parent: self)
+        natives.enumerated().forEach { (index, native) in
+            native.mount(to: _view.stackView, at: index, parent: self)
+        }
+        oldComponent = nil
     }
 }
 
 public class UIHostingController<Component: ComponentBase>: _UIHostingController<Component> {
     public override var component: Component {
         willSet {
-            oldComponent = component
+            if oldComponent == nil {
+                oldComponent = component
+            }
             view.setNeedsLayout()
         }
     }

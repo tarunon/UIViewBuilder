@@ -7,8 +7,7 @@
 
 import XCTest
 import UIKit
-@testable import UIViewBuilder
-
+import UIViewBuilder
 import SwiftUI
 
 class BenchMark: XCTestCase {
@@ -62,14 +61,14 @@ class BenchMark: XCTestCase {
             var body: some View {
                 SwiftUI.VStack {
                     SwiftUI.ForEach.init(array, id: \.self) {
-                        SwiftUI.Text("\($0)")
+                        Text("\($0)")
                     }
                     if flag {
                         SwiftUI.Button(action: { }) {
-                            SwiftUI.Text(title)
+                            Text(title)
                         }
                     } else {
-                        SwiftUI.Text(title)
+                        Text(title)
                     }
                 }
             }
