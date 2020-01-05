@@ -1,12 +1,26 @@
 # UIViewBuilder
 
-Generate UIKit (not SwiftUI) components from FunctionBuilder.
-FunctionBuilder is not public feature. Use at your own risk.
+Alternative SwiftUI using pure UIKit. Support from iOS9.
+This is WIP project. All API isn't fixed.
 
-|  | support |
-|--|--|
-| UITableViewCell | ○ |
-| UITableViewHeaderFooterView | wip |
-| UICollectionViewCell | wip |
-| UICollectionReusableView | wip |
-| UIStackView | wip |
+Let's try these functions in Example app.
+```swift
+HostingController {
+  VStack {
+    if isHello {
+      Label(text: "hello")
+    } else {
+      Label(text: "good night")
+    }
+    Label(text: "world")
+  }
+}
+
+HostingController {
+  List {
+    ForEach(data: [0..<1000]) {
+      Label(text: "\($0)")
+    }
+  }
+}
+```
