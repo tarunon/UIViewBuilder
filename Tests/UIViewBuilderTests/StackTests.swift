@@ -46,42 +46,40 @@ class StackTests: XCTestCase {
             }
         }
 
-        var fixture = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-
-        var component: TestComponent {
-            TestComponent(
-                text0: fixture[0],
-                text1: fixture[1],
-                text2: fixture[2],
-                text3: fixture[3],
-                text4: fixture[4],
-                text5: fixture[5],
-                text6: fixture[6],
-                text7: fixture[7],
-                text8: fixture[8],
-                text9: fixture[9]
-            )
-        }
-
-        let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = HostingController(component)
-        window.rootViewController = vc
-        window.isHidden = false
-        vc.view.layoutIfNeeded()
-        XCTAssertEqual(
-            vc.visibleViews().map { ($0 as! UILabel).text },
-            fixture
-        )
-
-        fixture = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
-
-        vc.component = component
-        vc.view.layoutIfNeeded()
-
-        XCTAssertEqual(
-            vc.visibleViews().map { ($0 as! UILabel).text },
-            fixture
-        )
+        testComponent(
+            fixtureType: [String].self,
+            creation: {
+                TestComponent(
+                    text0: $0[0],
+                    text1: $0[1],
+                    text2: $0[2],
+                    text3: $0[3],
+                    text4: $0[4],
+                    text5: $0[5],
+                    text6: $0[6],
+                    text7: $0[7],
+                    text8: $0[8],
+                    text9: $0[9]
+                )
+            },
+            tests: [
+                Assert(
+                    fixture: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+                    assert: { fixture, vc in
+                        XCTAssertEqual(
+                            vc.visibleViews().map { ($0 as! UILabel).text },
+                            fixture
+                        )
+                }),
+                Assert(
+                    fixture: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+                    assert: { fixture, vc in
+                        XCTAssertEqual(
+                            vc.visibleViews().map { ($0 as! UILabel).text },
+                            fixture
+                        )
+                })
+        ])
     }
 
     func testEither() {
@@ -145,42 +143,40 @@ class StackTests: XCTestCase {
             }
         }
 
-        var fixture = [true, false, true, false, true, false, true, false, true, false]
-
-        var component: TestComponent {
-            TestComponent(
-                condition0: fixture[0],
-                condition1: fixture[1],
-                condition2: fixture[2],
-                condition3: fixture[3],
-                condition4: fixture[4],
-                condition5: fixture[5],
-                condition6: fixture[6],
-                condition7: fixture[7],
-                condition8: fixture[8],
-                condition9: fixture[9]
-            )
-        }
-
-        let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = HostingController(component)
-        window.rootViewController = vc
-        window.isHidden = false
-        vc.view.layoutIfNeeded()
-        XCTAssertEqual(
-            vc.visibleViews().map { ($0 as! UILabel).text },
-            ["0", "2", "4", "a", "6", "c", "8", "e"]
-        )
-
-        fixture = [false, true, false, true, false, true, false, true, false, true]
-
-        vc.component = component
-        vc.view.layoutIfNeeded()
-
-        XCTAssertEqual(
-            vc.visibleViews().map { ($0 as! UILabel).text },
-            ["1", "3", "5", "b", "7", "d", "9"]
-        )
+        testComponent(
+           fixtureType: [Bool].self,
+           creation: {
+               TestComponent(
+                   condition0: $0[0],
+                   condition1: $0[1],
+                   condition2: $0[2],
+                   condition3: $0[3],
+                   condition4: $0[4],
+                   condition5: $0[5],
+                   condition6: $0[6],
+                   condition7: $0[7],
+                   condition8: $0[8],
+                   condition9: $0[9]
+               )
+           },
+           tests: [
+               Assert(
+                   fixture: [true, false, true, false, true, false, true, false, true, false],
+                   assert: { _, vc in
+                       XCTAssertEqual(
+                           vc.visibleViews().map { ($0 as! UILabel).text },
+                           ["0", "2", "4", "a", "6", "c", "8", "e"]
+                       )
+               }),
+               Assert(
+                   fixture: [false, true, false, true, false, true, false, true, false, true],
+                   assert: { _, vc in
+                       XCTAssertEqual(
+                           vc.visibleViews().map { ($0 as! UILabel).text },
+                           ["1", "3", "5", "b", "7", "d", "9"]
+                       )
+               })
+       ])
     }
 
     func testForEach() {
@@ -206,45 +202,41 @@ class StackTests: XCTestCase {
             }
         }
 
-        var fixture = [["1", "2", "3"], ["a", "b", "c"], ["!", "@", "#"]]
-
-        var component: TestComponent {
-            TestComponent(
-                array0: fixture[0],
-                array1: fixture[1],
-                array2: fixture[2]
-            )
-        }
-
-        let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = HostingController(component)
-        window.rootViewController = vc
-        window.isHidden = false
-        vc.view.layoutIfNeeded()
-        XCTAssertEqual(
-            vc.visibleViews().map { ($0 as! UILabel).text },
-            fixture.flatMap { $0 }
-        )
-
-        fixture = [["1", "2", "3", "4", "5", "6", "7"], ["a", "b", "c"], []]
-
-        vc.component = component
-        vc.view.layoutIfNeeded()
-
-        XCTAssertEqual(
-            vc.visibleViews().map { ($0 as! UILabel).text },
-            fixture.flatMap { $0 }
-        )
-
-        fixture = [[], ["a", "b", "c", "d", "e", "f", "g"], ["!", "@", "#"]]
-
-        vc.component = component
-        vc.view.layoutIfNeeded()
-
-        XCTAssertEqual(
-            vc.visibleViews().map { ($0 as! UILabel).text },
-            fixture.flatMap { $0 }
-        )
+        testComponent(
+            fixtureType: [[String]].self,
+            creation: {
+                TestComponent(
+                    array0: $0[0],
+                    array1: $0[1],
+                    array2: $0[2]
+                )
+            },
+            tests: [
+                Assert(
+                    fixture: [["1", "2", "3"], ["a", "b", "c"], ["!", "@", "#"]],
+                    assert: { fixture, vc in
+                        XCTAssertEqual(
+                            vc.visibleViews().map { ($0 as! UILabel).text },
+                            fixture.flatMap { $0 }
+                        )
+                }),
+                Assert(
+                    fixture: [["1", "2", "3", "4", "5", "6", "7"], ["a", "b", "c"], []],
+                    assert: { fixture, vc in
+                        XCTAssertEqual(
+                            vc.visibleViews().map { ($0 as! UILabel).text },
+                            fixture.flatMap { $0 }
+                        )
+                }),
+                Assert(
+                    fixture: [[], ["a", "b", "c", "d", "e", "f", "g"], ["!", "@", "#"]],
+                    assert: { fixture, vc in
+                        XCTAssertEqual(
+                            vc.visibleViews().map { ($0 as! UILabel).text },
+                            fixture.flatMap { $0 }
+                        )
+                })
+        ])
     }
 
     func testForEachMapId() {
@@ -270,71 +262,67 @@ class StackTests: XCTestCase {
             }
         }
 
-        var fixture = [
-            TestComponent.Identified(id: 1, text: "1"),
-            TestComponent.Identified(id: 2, text: "2"),
-            TestComponent.Identified(id: 3, text: "3")
-        ]
+        var expectedNativeIds = [ObjectIdentifier]()
 
-        var component: TestComponent {
-            TestComponent(
-                array0: fixture
-            )
-        }
+        testComponent(
+            fixtureType: [TestComponent.Identified].self,
+            creation: {
+                TestComponent(
+                    array0: $0
+                )
+            },
+            tests: [
+                Assert(
+                    fixture: [
+                        TestComponent.Identified(id: 1, text: "1"),
+                        TestComponent.Identified(id: 2, text: "2"),
+                        TestComponent.Identified(id: 3, text: "3")
+                    ],
+                    assert: { fixture, vc in
+                        XCTAssertEqual(
+                            vc.visibleViews().map { ($0 as! UILabel).text },
+                            fixture.map { $0.text }
+                        )
+                        expectedNativeIds = vc.visibleViews().map { ObjectIdentifier($0) }
+                }),
+                Assert(
+                    fixture: [
+                        TestComponent.Identified(id: 4, text: "1"),
+                        TestComponent.Identified(id: 5, text: "2"),
+                        TestComponent.Identified(id: 6, text: "3"),
+                        TestComponent.Identified(id: 7, text: "4"),
+                        TestComponent.Identified(id: 1, text: "1"),
+                        TestComponent.Identified(id: 2, text: "2"),
+                        TestComponent.Identified(id: 3, text: "3")
+                    ],
+                    assert: { fixture, vc in
+                        XCTAssertEqual(
+                            vc.visibleViews().map { ($0 as! UILabel).text },
+                            fixture.map { $0.text }
+                        )
+                        XCTAssertEqual(
+                            expectedNativeIds,
+                            vc.visibleViews()[4..<7].map { ObjectIdentifier($0) }
+                        )
+                }),
+                Assert(
+                    fixture: [
+                        TestComponent.Identified(id: 1, text: "1"),
+                        TestComponent.Identified(id: 2, text: "2"),
+                        TestComponent.Identified(id: 3, text: "3")
+                    ],
+                    assert: { fixture, vc in
+                        XCTAssertEqual(
+                            vc.visibleViews().map { ($0 as! UILabel).text },
+                            fixture.map { $0.text }
+                        )
 
-        let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = HostingController(component)
-        window.rootViewController = vc
-        window.isHidden = false
-        vc.view.layoutIfNeeded()
-        XCTAssertEqual(
-            vc.visibleViews().map { ($0 as! UILabel).text },
-            fixture.map { $0.text }
-        )
-
-        let expectedNativeIds = vc.visibleViews().map { ObjectIdentifier($0) }
-
-        fixture = [
-            TestComponent.Identified(id: 4, text: "1"),
-            TestComponent.Identified(id: 5, text: "2"),
-            TestComponent.Identified(id: 6, text: "3"),
-            TestComponent.Identified(id: 7, text: "4"),
-            TestComponent.Identified(id: 1, text: "1"),
-            TestComponent.Identified(id: 2, text: "2"),
-            TestComponent.Identified(id: 3, text: "3")
-        ]
-
-        vc.component = component
-        vc.view.layoutIfNeeded()
-
-        XCTAssertEqual(
-            vc.visibleViews().map { ($0 as! UILabel).text },
-            fixture.map { $0.text }
-        )
-
-        XCTAssertEqual(
-            expectedNativeIds,
-            vc.visibleViews()[4..<7].map { ObjectIdentifier($0) }
-        )
-
-        fixture = [
-            TestComponent.Identified(id: 1, text: "1"),
-            TestComponent.Identified(id: 2, text: "2"),
-            TestComponent.Identified(id: 3, text: "3")
-        ]
-
-        vc.component = component
-        vc.view.layoutIfNeeded()
-
-        XCTAssertEqual(
-            vc.visibleViews().map { ($0 as! UILabel).text },
-            fixture.map { $0.text }
-        )
-
-        XCTAssertEqual(
-            expectedNativeIds,
-            vc.visibleViews().map { ObjectIdentifier($0) }
-        )
+                        XCTAssertEqual(
+                            expectedNativeIds,
+                            vc.visibleViews().map { ObjectIdentifier($0) }
+                        )
+                })
+        ])
     }
 
     func testForEachReuseInEither() {
@@ -355,44 +343,39 @@ class StackTests: XCTestCase {
             }
         }
 
-        var fixture = (true, ["1", "2", "3"])
-
-        var component: TestComponent {
-            TestComponent(
-                condition0: fixture.0,
-                array0: fixture.1
-            )
-        }
-
-        let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = HostingController(component)
-        window.rootViewController = vc
-        window.isHidden = false
-        vc.view.layoutIfNeeded()
-        XCTAssertEqual(
-            vc.visibleViews().map { ($0 as! UILabel).text },
-            fixture.1
-        )
-
-        fixture = (false, ["1", "2", "3", "4"])
-
-        vc.component = component
-        vc.view.layoutIfNeeded()
-
-        XCTAssertEqual(
-            vc.visibleViews().map { ($0 as! UILabel).text },
-            []
-        )
-
-        fixture = (true, ["1", "2", "3", "4", "5"])
-
-        vc.component = component
-        vc.view.layoutIfNeeded()
-
-        XCTAssertEqual(
-            vc.visibleViews().map { ($0 as! UILabel).text },
-            fixture.1
-        )
+        testComponent(
+            fixtureType: (Bool, [String]).self,
+            creation: {
+                TestComponent(
+                    condition0: $0.0,
+                    array0: $0.1
+                )
+            },
+            tests: [
+                Assert(
+                    fixture: (true, ["1", "2", "3"]),
+                    assert: { fixture, vc in
+                        XCTAssertEqual(
+                            vc.visibleViews().map { ($0 as! UILabel).text },
+                            fixture.1
+                        )
+                }),
+                Assert(
+                    fixture: (false, ["1", "2", "3", "4"]),
+                    assert: { fixture, vc in
+                        XCTAssertEqual(
+                            vc.visibleViews().map { ($0 as! UILabel).text },
+                            []
+                        )
+                }),
+                Assert(
+                    fixture: (true, ["1", "2", "3", "4", "5"]),
+                    assert: { fixture, vc in
+                        XCTAssertEqual(
+                            vc.visibleViews().map { ($0 as! UILabel).text },
+                            fixture.1
+                        )
+                })
+        ])
     }
 }
-
