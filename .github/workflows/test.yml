@@ -1,0 +1,16 @@
+name: Test
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: macOS-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Package Init
+      run: swift package generate-xcodeproj
+    - name: Run tests
+      run: xcodebuild test -scheme UIViewBuilder-Package -configuration Debug -sdk iphonesimulator -destination "platform=iOS Simulator,name=iPhone 11"
+
