@@ -27,7 +27,12 @@ final class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewPro
     }
     let cache = NativeViewCache()
     lazy var natives = self.body.create()
-    var stackView: UIStackView!
+    lazy var stackView: UIStackView = {
+        let stackView = UIStackView()
+        stackView.axis = Config.axis
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        return stackView
+    }()
     var parent: UIViewController!
 
     init(config: Config.Type, body: Body) {
@@ -37,13 +42,8 @@ final class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewPro
     @inline(__always)
     func mount(to target: Mountable, at index: Int, parent: UIViewController) {
         self.parent = parent
-        if stackView == nil {
-            stackView = UIStackView()
-            stackView.axis = Config.axis
-            stackView.translatesAutoresizingMaskIntoConstraints = false
-            natives.enumerated().forEach { (index, target) in
-                target.mount(to: stackView, at: index, parent: parent)
-            }
+        natives.enumerated().forEach { (index, target) in
+            target.mount(to: stackView, at: index, parent: parent)
         }
         target.mount(view: stackView, at: index)
     }
@@ -53,7 +53,6 @@ final class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewPro
         target.unmount(view: stackView)
         natives.reversed().forEach { $0.unmount(from: stackView) }
         natives = []
-        stackView = nil
     }
 }
 

@@ -34,9 +34,9 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
     }
 
     @inline(__always)
-    private func difference(reducer: Reducer) -> [Difference] {
+    private func difference(reducer: Reducer, oldCreation: (Data.Element) -> Component) -> [Difference] {
         let components = reducer.fixedData.map { $0.map(creation) }
-        let oldComponents = reducer.fixedOldData.map { $0.map(creation) }
+        let oldComponents = reducer.fixedOldData.map { $0.map(oldCreation) }
 
         return zip(components, oldComponents).reduce(into: (viewIndex: 0, oldViewIndex: 0, differences: [Difference]())) { (result, value) in
             switch value {
@@ -83,7 +83,7 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
            }
         }
 
-        return difference(reducer: reducer)
+        return difference(reducer: reducer, oldCreation: oldValue?.creation ?? { _ in fatalError() })
     }
 
     @inline(__always)
@@ -97,7 +97,7 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
         } else {
             reducer = Reducer(fixedData: data.map { $0 }, fixedOldData: oldData + Array(repeating: Data.Element?.none, count: data.count - oldData.count))
         }
-        return difference(reducer: reducer)
+        return difference(reducer: reducer, oldCreation: oldValue?.creation ?? { _ in fatalError() })
     }
 
     @inline(__always)
