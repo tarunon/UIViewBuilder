@@ -78,6 +78,7 @@ class NativeCell<Body: ComponentBase>: UITableViewCell, Mountable {
         } else {
             update(differences: body.difference(with: oldComponent), natives: &natives, cache: parent.cache, parent: parent)
         }
+        oldComponent = body
     }
 
     func mount(view: UIView, at index: Int) {
