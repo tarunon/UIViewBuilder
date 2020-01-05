@@ -12,5 +12,5 @@ jobs:
     - name: Package Init
       run: swift package generate-xcodeproj
     - name: Run tests
-      run: xcodebuild test -scheme UIViewBuilder -configuration Debug -sdk iphonesimulator -destination "platform=iOS Simulator,name=iPhone 11"
+      run: xcodebuild test -scheme UIViewBuilder-Package -configuration Debug -sdk iphonesimulator -destination "platform=iOS Simulator,name=iPhone 11"
 
