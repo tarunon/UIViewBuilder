@@ -48,12 +48,16 @@ final class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewPro
     @inline(__always)
     func mount(to target: Mountable, at index: Int, parent: UIViewController) {
         self.parent = parent
+        natives.enumerated().forEach { (index, target) in
+            target.mount(to: self, at: index, parent: parent)
+        }
         target.mount(view: stackView, at: index)
     }
 
     @inline(__always)
     func unmount(from target: Mountable) {
         target.unmount(view: stackView)
+        natives.reversed().forEach { $0.unmount(from: self) }
     }
 
     func mount(view: UIView, at index: Int) {

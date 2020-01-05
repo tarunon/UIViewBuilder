@@ -43,7 +43,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             window.makeKeyAndVisible()
 
             Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { (_) in
-                vc.component.body.data = emoji.shuffled()
+                vc.component.body.data = Array(emoji.shuffled()[0..<Int.random(in: 0..<emoji.count)])
             }
         }
     }
