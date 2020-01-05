@@ -48,6 +48,11 @@ public class _HostingController<Component: ComponentBase>: UIViewController {
     lazy var natives = self.component.create()
     let cache = NativeViewCache()
 
+    public init(@ComponentBuilder creation: @escaping () -> Component) {
+        self.creation = creation
+        super.init(nibName: nil, bundle: nil)
+    }
+
     public init(_ component: @autoclosure @escaping () -> Component) {
         self.creation = component
         super.init(nibName: nil, bundle: nil)
