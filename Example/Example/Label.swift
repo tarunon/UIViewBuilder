@@ -9,7 +9,7 @@
 import UIKit
 import UIViewBuilder
 
-struct Label: NativeRepresentable {
+struct Label: UIViewRepresentable {
     var text: String
     func create() -> UILabel {
         let label = UILabel()
@@ -24,7 +24,7 @@ struct Label: NativeRepresentable {
     }
 }
 
-struct Spacer: NativeRepresentable {
+struct Spacer: UIViewRepresentable {
     func create() -> UIView {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false

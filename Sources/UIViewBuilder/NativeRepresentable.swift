@@ -25,16 +25,23 @@ extension NativeRepresentable {
     }
 }
 
-extension NativeRepresentable where Native: UIView {
+public protocol UIViewRepresentable: NativeRepresentable where Native: UIView {
+
+}
+
+public extension UIViewRepresentable {
     @inline(__always)
-    public func asAnyComponent() -> AnyComponent {
+    func asAnyComponent() -> AnyComponent {
         AnyComponent(body: self)
     }
 }
 
-extension NativeRepresentable where Native: UIViewController {
+public protocol UIViewControllerRepresentable: NativeRepresentable where Native: UIViewController {
+}
+
+extension UIViewControllerRepresentable {
     @inline(__always)
-    public func asAnyComponent() -> AnyComponent {
+    func asAnyComponent() -> AnyComponent {
         AnyComponent(body: self)
     }
 }

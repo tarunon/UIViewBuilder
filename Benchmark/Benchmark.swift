@@ -10,7 +10,7 @@ import UIKit
 import UIViewBuilder
 import SwiftUI
 
-struct Label: NativeRepresentable {
+struct Label: UIViewBuilder.UIViewRepresentable {
     var text: String
 
     func create() -> UILabel {
@@ -25,7 +25,7 @@ struct Label: NativeRepresentable {
     }
 }
 
-struct TextView: NativeRepresentable {
+struct TextView: UIViewBuilder.UIViewRepresentable {
     var text: String
 
     func create() -> UITextView {
@@ -41,7 +41,7 @@ struct TextView: NativeRepresentable {
     }
 }
 
-struct Button: NativeRepresentable {
+struct Button: UIViewBuilder.UIViewRepresentable {
     var text: String
 
     func create() -> UIButton {

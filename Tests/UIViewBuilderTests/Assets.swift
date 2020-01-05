@@ -8,7 +8,7 @@
 import UIViewBuilder
 import UIKit
 
-struct Label: NativeRepresentable {
+struct Label: UIViewRepresentable {
     var text: String
 
     func create() -> UILabel {
@@ -23,7 +23,7 @@ struct Label: NativeRepresentable {
     }
 }
 
-struct TextView: NativeRepresentable {
+struct TextView: UIViewRepresentable {
     var text: String
 
     func create() -> UITextView {
@@ -39,7 +39,7 @@ struct TextView: NativeRepresentable {
     }
 }
 
-struct Button: NativeRepresentable {
+struct Button: UIViewRepresentable {
     var text: String
 
     func create() -> UIButton {
@@ -54,7 +54,7 @@ struct Button: NativeRepresentable {
     }
 }
 
-struct Block: NativeRepresentable {
+struct Block: UIViewRepresentable {
     func create() -> UIView {
         let native = UIView()
         native.translatesAutoresizingMaskIntoConstraints = false
