@@ -1,5 +1,5 @@
 //
-//  Representable.swift
+//  NativeRepresentable.swift
 //  
 //
 //  Created by tarunon on 2020/01/02.
@@ -25,24 +25,14 @@ extension NativeRepresentable {
     }
 }
 
-public protocol UIViewRepresentable: NativeRepresentable where Native: UIView {
-    func create() -> Native
-    func update(native: Native)
-}
-
-extension UIViewRepresentable {
+extension NativeRepresentable where Native: UIView {
     @inline(__always)
     public func asAnyComponent() -> AnyComponent {
         AnyComponent(body: self)
     }
 }
 
-public protocol UIViewControllerRepresentable: NativeRepresentable where Native: UIViewController {
-    func create() -> Native
-    func update(native: Native)
-}
-
-extension UIViewControllerRepresentable {
+extension NativeRepresentable where Native: UIViewController {
     @inline(__always)
     public func asAnyComponent() -> AnyComponent {
         AnyComponent(body: self)

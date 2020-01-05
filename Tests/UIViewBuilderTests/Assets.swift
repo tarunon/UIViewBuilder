@@ -8,8 +8,7 @@
 import UIViewBuilder
 import UIKit
 
-struct Label: UIViewRepresentable {
-    typealias View = UILabel
+struct Label: NativeRepresentable {
     var text: String
 
     func create() -> UILabel {
@@ -24,8 +23,7 @@ struct Label: UIViewRepresentable {
     }
 }
 
-struct TextView: UIViewRepresentable {
-    typealias View = UITextView
+struct TextView: NativeRepresentable {
     var text: String
 
     func create() -> UITextView {
@@ -41,8 +39,7 @@ struct TextView: UIViewRepresentable {
     }
 }
 
-struct Button: UIViewRepresentable {
-    typealias View = UIButton
+struct Button: NativeRepresentable {
     var text: String
 
     func create() -> UIButton {

@@ -10,8 +10,7 @@ import UIKit
 import UIViewBuilder
 import SwiftUI
 
-struct Label: UIViewBuilder.UIViewRepresentable {
-    typealias View = UILabel
+struct Label: NativeRepresentable {
     var text: String
 
     func create() -> UILabel {
@@ -26,8 +25,7 @@ struct Label: UIViewBuilder.UIViewRepresentable {
     }
 }
 
-struct TextView: UIViewBuilder.UIViewRepresentable {
-    typealias View = UITextView
+struct TextView: NativeRepresentable {
     var text: String
 
     func create() -> UITextView {
@@ -43,8 +41,7 @@ struct TextView: UIViewBuilder.UIViewRepresentable {
     }
 }
 
-struct Button: UIViewBuilder.UIViewRepresentable {
-    typealias View = UIButton
+struct Button: NativeRepresentable {
     var text: String
 
     func create() -> UIButton {
@@ -60,7 +57,7 @@ struct Button: UIViewBuilder.UIViewRepresentable {
 }
 
 
-class BenchMark: XCTestCase {
+class Benchmark: XCTestCase {
     func testBenchmarkComponentStack() {
         struct Foo: Component {
             var array: [Int]
@@ -88,7 +85,7 @@ class BenchMark: XCTestCase {
             Foo(array: [6, 7, 8, 9, 10], flag: false, title: "edcba")
         ], count: 100).flatMap { $0 }
 
-        let vc = UIHostingController(Foo(array: [], flag: true, title: ""))
+        let vc = HostingController(Foo(array: [], flag: true, title: ""))
 
         let window = UIWindow(frame: UIScreen.main.bounds)
         window.rootViewController = vc
@@ -171,7 +168,7 @@ class BenchMark: XCTestCase {
              Foo(array: [6, 7, 8, 9, 10], flag: false, title: "edcba")
          ], count: 10).flatMap { $0 }
 
-         let vc = UIHostingController(Foo(array: [], flag: true, title: ""))
+         let vc = HostingController(Foo(array: [], flag: true, title: ""))
 
          let window = UIWindow(frame: UIScreen.main.bounds)
          window.rootViewController = vc

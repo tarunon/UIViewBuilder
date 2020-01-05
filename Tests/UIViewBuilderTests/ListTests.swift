@@ -8,7 +8,7 @@
 import XCTest
 import UIViewBuilder
 
-fileprivate extension UIHostingController {
+fileprivate extension HostingController {
     func visibleViews() -> [UIView] {
         (children.first as! UITableViewController).tableView.visibleCells.flatMap { $0.contentView.subviews.first?.subviews ?? [] }
     }
@@ -64,7 +64,7 @@ class ListTests: XCTestCase {
         }
 
         let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = UIHostingController(component)
+        let vc = HostingController(component)
         window.rootViewController = vc
         window.isHidden = false
         vc.view.layoutIfNeeded()
@@ -164,7 +164,7 @@ class ListTests: XCTestCase {
         }
 
         let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = UIHostingController(component)
+        let vc = HostingController(component)
         window.rootViewController = vc
         window.isHidden = false
         vc.view.layoutIfNeeded()
@@ -219,7 +219,7 @@ class ListTests: XCTestCase {
         }
 
         let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = UIHostingController(component)
+        let vc = HostingController(component)
         window.rootViewController = vc
         window.isHidden = false
         vc.view.layoutIfNeeded()
@@ -285,7 +285,7 @@ class ListTests: XCTestCase {
         }
 
         let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = UIHostingController(component)
+        let vc = HostingController(component)
         window.rootViewController = vc
         window.isHidden = false
         vc.view.layoutIfNeeded()
@@ -367,7 +367,7 @@ class ListTests: XCTestCase {
         }
 
         let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = UIHostingController(component)
+        let vc = HostingController(component)
         window.rootViewController = vc
         window.isHidden = false
         vc.view.layoutIfNeeded()

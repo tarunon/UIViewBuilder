@@ -8,7 +8,7 @@
 import XCTest
 import UIViewBuilder
 
-fileprivate extension UIHostingController {
+fileprivate extension HostingController {
     func visibleViews() -> [UIView] {
         (view.subviews.first?.subviews.first as! UIStackView).arrangedSubviews.filter { !$0.isHidden }
     }
@@ -64,7 +64,7 @@ class StackTests: XCTestCase {
         }
 
         let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = UIHostingController(component)
+        let vc = HostingController(component)
         window.rootViewController = vc
         window.isHidden = false
         vc.view.layoutIfNeeded()
@@ -163,7 +163,7 @@ class StackTests: XCTestCase {
         }
 
         let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = UIHostingController(component)
+        let vc = HostingController(component)
         window.rootViewController = vc
         window.isHidden = false
         vc.view.layoutIfNeeded()
@@ -217,7 +217,7 @@ class StackTests: XCTestCase {
         }
 
         let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = UIHostingController(component)
+        let vc = HostingController(component)
         window.rootViewController = vc
         window.isHidden = false
         vc.view.layoutIfNeeded()
@@ -283,7 +283,7 @@ class StackTests: XCTestCase {
         }
 
         let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = UIHostingController(component)
+        let vc = HostingController(component)
         window.rootViewController = vc
         window.isHidden = false
         vc.view.layoutIfNeeded()
@@ -365,7 +365,7 @@ class StackTests: XCTestCase {
         }
 
         let window = UIWindow(frame: UIScreen.main.bounds)
-        let vc = UIHostingController(component)
+        let vc = HostingController(component)
         window.rootViewController = vc
         window.isHidden = false
         vc.view.layoutIfNeeded()

@@ -19,7 +19,7 @@ struct VStackConfig: StackConfig {
     public static let axis: NSLayoutConstraint.Axis = .vertical
 }
 
-class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewProtocol {
+final class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewProtocol {
     var body: Body {
         didSet {
             stackView.update(differences: body.difference(with: oldValue), natives: &natives, cache: cache, parent: parent)

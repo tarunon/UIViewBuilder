@@ -1,5 +1,5 @@
 //
-//  UIHostingController.swift
+//  HostingController.swift
 //  UIViewBuilder
 //
 //  Created by tarunon on 2020/01/01.
@@ -7,11 +7,11 @@
 
 import UIKit
 
-public class _UIHostingController<Component: ComponentBase>: UIViewController {
+public class _HostingController<Component: ComponentBase>: UIViewController {
     class View: UIView {
-        weak var parent: _UIHostingController?
+        weak var parent: _HostingController?
         lazy var stackView = UIStackView()
-        init(parent: _UIHostingController) {
+        init(parent: _HostingController) {
             self.parent = parent
             super.init(frame: .zero)
             stackView.translatesAutoresizingMaskIntoConstraints = false
@@ -70,7 +70,7 @@ public class _UIHostingController<Component: ComponentBase>: UIViewController {
     }
 }
 
-public class UIHostingController<Component: ComponentBase>: _UIHostingController<Component> {
+public class HostingController<Component: ComponentBase>: _HostingController<Component> {
     public override var component: Component {
         willSet {
             if oldComponent == nil {
