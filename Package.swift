@@ -27,5 +27,9 @@ let package = Package(
         .testTarget(
             name: "UIViewBuilderTests",
             dependencies: ["UIViewBuilder"]),
+        .testTarget(
+            name: "Benchmark",
+            dependencies: ["UIViewBuilder"],
+            path: "Benchmark"),
     ]
 )

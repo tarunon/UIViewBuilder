@@ -7,16 +7,6 @@
 
 import UIKit
 
-@available(iOS 13, *)
-extension CollectionDifference.Change {
-    var offset: Int {
-        switch self {
-        case .insert(let offset, _, _): return offset
-        case .remove(let offset, _, _): return offset
-        }
-    }
-}
-
 public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID: Equatable>: ComponentBase, _Component where Data.Element: Equatable, Data.Index == Int {
     public var data: Data
 
@@ -44,6 +34,30 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
     }
 
     @inline(__always)
+    private func difference(reducer: Reducer) -> [Difference] {
+        let components = reducer.fixedData.map { $0.map(creation) }
+        let oldComponents = reducer.fixedOldData.map { $0.map(creation) }
+
+        return zip(components, oldComponents).reduce(into: (viewIndex: 0, oldViewIndex: 0, differences: [Difference]())) { (result, value) in
+            switch value {
+            case (.some(let component), .some(let oldComponent)):
+                result.differences += component.difference(with: oldComponent).map { $0.with(offset: result.viewIndex, oldOffset: result.oldViewIndex) }
+                result.viewIndex += component.length()
+                result.oldViewIndex += oldComponent.length()
+            case (.some(let component), .none):
+                result.differences += component.difference(with: nil).map { $0.with(offset: result.viewIndex, oldOffset: result.oldViewIndex) }
+                result.viewIndex += component.length()
+            case (.none, .some(let oldComponent)):
+                let length = oldComponent.length()
+                result.differences += (result.oldViewIndex..<result.oldViewIndex + length).map { Difference(index: $0, change: .remove(oldComponent)) }
+                result.oldViewIndex += length
+            case (.none, .none):
+                fatalError()
+            }
+        }.differences
+    }
+
+    @inline(__always)
     func difference(with oldValue: ForEach?) -> [Difference] {
         guard #available(iOS 13, *) else {
             return differenceLegacy(with: oldValue)
@@ -67,34 +81,23 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
            case .remove(let offset, _, _):
                result.fixedData.insert(nil, at: offset)
            }
-       }
+        }
 
-        let components = reducer.fixedData.map { $0.map(creation) }
-        let oldComponents = reducer.fixedOldData.map { $0.map(creation) }
-
-        return zip(components, oldComponents).reduce(into: (viewIndex: 0, oldViewIndex: 0, differences: [Difference]())) { (result, value) in
-            switch value {
-            case (.some(let component), .some(let oldComponent)):
-                result.differences += component.difference(with: oldComponent).map { $0.with(offset: result.viewIndex, oldOffset: result.oldViewIndex) }
-                result.viewIndex += component.length()
-                result.oldViewIndex += oldComponent.length()
-            case (.some(let component), .none):
-                result.differences += component.difference(with: nil).map { $0.with(offset: result.viewIndex, oldOffset: result.oldViewIndex) }
-                result.viewIndex += component.length()
-            case (.none, .some(let oldComponent)):
-                let length = oldComponent.length()
-                result.differences += (result.oldViewIndex..<result.oldViewIndex + length).map { Difference(index: $0, change: .remove(oldComponent)) }
-                result.oldViewIndex += length
-            case (.none, .none):
-                fatalError()
-            }
-        }.differences
+        return difference(reducer: reducer)
     }
-
 
     @inline(__always)
     func differenceLegacy(with oldValue: ForEach?) -> [Difference] {
-        fatalError()
+        let oldData = oldValue?.data.map { $0 } ?? []
+        let reducer: Reducer
+        if data.count == oldData.count {
+            reducer = Reducer(fixedData: data.map { $0 }, fixedOldData: oldData)
+        } else if data.count < oldData.count {
+            reducer = Reducer(fixedData: data.map { $0 } + Array(repeating: Data.Element?.none, count: oldData.count - data.count), fixedOldData: oldData)
+        } else {
+            reducer = Reducer(fixedData: data.map { $0 }, fixedOldData: oldData + Array(repeating: Data.Element?.none, count: data.count - oldData.count))
+        }
+        return difference(reducer: reducer)
     }
 
     @inline(__always)

@@ -249,16 +249,14 @@ class ListTests: XCTestCase {
         )
     }
 
-    @available(iOS 13, *)
     func testForEachMapId() {
+        guard #available(iOS 13, *) else {
+            return
+        }
         struct TestComponent: Component {
-            struct Identified: Component, Identifiable {
+            struct Identified: Equatable, Identifiable {
                 var id: Int
                 var text: String
-
-                var body: Label {
-                    Label(text: text)
-                }
             }
 
             var array0: [Identified]
@@ -267,7 +265,7 @@ class ListTests: XCTestCase {
                 AnyComponent {
                     List {
                         ForEach(data: array0) {
-                            $0
+                            Label(text: $0.text)
                         }
                     }
                 }
@@ -296,14 +294,16 @@ class ListTests: XCTestCase {
             fixture.map { $0.text }
         )
 
+        let expectedNativeIds = vc.visibleViews().map { ObjectIdentifier($0) }
+
         fixture = [
             TestComponent.Identified(id: 4, text: "1"),
             TestComponent.Identified(id: 5, text: "2"),
             TestComponent.Identified(id: 6, text: "3"),
             TestComponent.Identified(id: 7, text: "4"),
-            TestComponent.Identified(id: 1, text: "5"),
-            TestComponent.Identified(id: 2, text: "6"),
-            TestComponent.Identified(id: 3, text: "7")
+            TestComponent.Identified(id: 1, text: "1"),
+            TestComponent.Identified(id: 2, text: "2"),
+            TestComponent.Identified(id: 3, text: "3")
         ]
 
         vc.component = component
@@ -314,10 +314,15 @@ class ListTests: XCTestCase {
             fixture.map { $0.text }
         )
 
+        XCTAssertEqual(
+            expectedNativeIds,
+            vc.visibleViews()[4..<7].map { ObjectIdentifier($0) }
+        )
+
         fixture = [
-            TestComponent.Identified(id: 1, text: "a"),
-            TestComponent.Identified(id: 2, text: "b"),
-            TestComponent.Identified(id: 3, text: "c")
+            TestComponent.Identified(id: 1, text: "1"),
+            TestComponent.Identified(id: 2, text: "2"),
+            TestComponent.Identified(id: 3, text: "3")
         ]
 
         vc.component = component
@@ -326,6 +331,11 @@ class ListTests: XCTestCase {
         XCTAssertEqual(
             vc.visibleViews().map { ($0 as! UILabel).text },
             fixture.map { $0.text }
+        )
+
+        XCTAssertEqual(
+            expectedNativeIds,
+            vc.visibleViews().map { ObjectIdentifier($0) }
         )
     }
 
