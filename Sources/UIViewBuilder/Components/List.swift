@@ -26,7 +26,7 @@ class NativeCell<Body: ComponentBase>: UITableViewCell, Mountable {
     var contentViewControllers: [UIViewController] = []
     var oldComponent: Body?
     var natives: [NativeViewProtocol]!
-    lazy var stackView: UIStackView = {
+    lazy var stackView = lazy(type: UIStackView.self) {
         let stackView = UIStackView()
         stackView.axis = .horizontal
         stackView.translatesAutoresizingMaskIntoConstraints = false
@@ -43,7 +43,7 @@ class NativeCell<Body: ComponentBase>: UITableViewCell, Mountable {
             ].map { $0.priority = UILayoutPriority.defaultHigh; return $0 }
         )
         return stackView
-    }()
+    }
 
     override func willMove(toSuperview newSuperview: UIView?) {
         contentViewControllers.forEach { content in
@@ -82,7 +82,7 @@ class NativeCell<Body: ComponentBase>: UITableViewCell, Mountable {
     }
 
     func mount(view: UIView, at index: Int) {
-        stackView.insertSubview(view, at: index)
+        stackView.insertArrangedSubview(view, at: index)
     }
 
     func mount(viewController: UIViewController, at index: Int, parent: UIViewController) {
@@ -169,7 +169,7 @@ final class NativeList<Body: ComponentBase>: _NativeList {
 }
 
 public struct List<Body: ComponentBase>: ComponentBase, _Component {
-    var body: Body
+    public var body: Body
 
     public init(@ComponentBuilder creation: () -> Body) {
         self.body = creation()

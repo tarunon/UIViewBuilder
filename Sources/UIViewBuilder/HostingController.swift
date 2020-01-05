@@ -10,10 +10,8 @@ import UIKit
 public class _HostingController<Component: ComponentBase>: UIViewController, Mountable {
     class View: UIView {
         weak var parent: _HostingController?
-        lazy var stackView = UIStackView()
-        init(parent: _HostingController) {
-            self.parent = parent
-            super.init(frame: .zero)
+        lazy var stackView = lazy(type: UIStackView.self) {
+            let stackView = UIStackView()
             stackView.translatesAutoresizingMaskIntoConstraints = false
             stackView.axis = .vertical
             addSubview(stackView)
@@ -25,6 +23,11 @@ public class _HostingController<Component: ComponentBase>: UIViewController, Mou
                     stackView.bottomAnchor.constraint(equalTo: bottomAnchor)
                 ]
             )
+            return stackView
+        }
+        init(parent: _HostingController) {
+            self.parent = parent
+            super.init(frame: .zero)
         }
 
         @available(*, unavailable)

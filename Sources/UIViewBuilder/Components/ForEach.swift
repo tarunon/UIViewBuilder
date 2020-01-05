@@ -52,7 +52,7 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
                 result.differences += (result.oldViewIndex..<result.oldViewIndex + length).map { Difference(index: $0, change: .remove(oldComponent)) }
                 result.oldViewIndex += length
             case (.none, .none):
-                fatalError()
+                break
             }
         }.differences
     }

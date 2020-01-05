@@ -24,11 +24,11 @@ final class NativeScrollView<Body: ComponentBase>: NativeViewProtocol, Mountable
 
     let cache = NativeViewCache()
     lazy var natives = self.body.create()
-    lazy var scrollView: UIScrollView = {
+    lazy var scrollView = lazy(type: UIScrollView.self) {
         let scrollView = UIScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         return scrollView
-    }()
+    }
     var parent: UIViewController!
 
     var widthConstraints = [NSLayoutConstraint]()

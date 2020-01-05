@@ -26,13 +26,19 @@ final class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewPro
         }
     }
     let cache = NativeViewCache()
-    lazy var natives = self.body.create()
-    lazy var stackView: UIStackView = {
+    lazy var natives = lazy(type: [NativeViewProtocol].self) {
+        let natives = self.body.create()
+        natives.enumerated().forEach { (index, target) in
+            target.mount(to: self, at: index, parent: parent)
+        }
+        return natives
+    }
+    lazy var stackView = lazy(type: UIStackView.self) {
         let stackView = UIStackView()
         stackView.axis = Config.axis
         stackView.translatesAutoresizingMaskIntoConstraints = false
         return stackView
-    }()
+    }
     var parent: UIViewController!
 
     init(config: Config.Type, body: Body) {
@@ -42,17 +48,12 @@ final class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewPro
     @inline(__always)
     func mount(to target: Mountable, at index: Int, parent: UIViewController) {
         self.parent = parent
-        natives.enumerated().forEach { (index, target) in
-            target.mount(to: self, at: index, parent: parent)
-        }
         target.mount(view: stackView, at: index)
     }
 
     @inline(__always)
     func unmount(from target: Mountable) {
         target.unmount(view: stackView)
-        natives.reversed().forEach { $0.unmount(from: self) }
-        natives = []
     }
 
     func mount(view: UIView, at index: Int) {
@@ -107,7 +108,7 @@ extension StackComponent {
 
 public struct HStack<Body: ComponentBase>: ComponentBase, StackComponent {
     typealias Config = HStackConfig
-    var body: Body
+    public var body: Body
 
     public init(@ComponentBuilder creation: () -> Body) {
         self.body = creation()
@@ -116,7 +117,7 @@ public struct HStack<Body: ComponentBase>: ComponentBase, StackComponent {
 
 public struct VStack<Body: ComponentBase>: ComponentBase, StackComponent {
     typealias Config = VStackConfig
-    var body: Body
+    public var body: Body
 
     public init(@ComponentBuilder creation: () -> Body) {
         self.body = creation()
