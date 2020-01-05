@@ -32,7 +32,7 @@ class NativeViewCache {
 
 extension Mountable {
     func update(differences: [Difference], natives: inout [NativeViewProtocol], cache: NativeViewCache, parent: UIViewController) {
-        differences.forEach { difference in
+        differences.sorted().forEach { difference in
             switch difference.change {
             case .remove(let component):
                 natives[difference.index].unmount(from: self)

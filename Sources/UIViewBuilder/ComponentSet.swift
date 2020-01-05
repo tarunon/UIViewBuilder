@@ -79,7 +79,7 @@ extension ComponentSet.Pair: ComponentBase, _Component where C0: ComponentBase, 
     @inline(__always)
     func difference(with oldValue: ComponentSet.Pair<C0, C1>?) -> [Difference] {
         c0.difference(with: oldValue?.c0) +
-            c1.difference(with: oldValue?.c1).map { $0.with(offset: c0.length()) }
+            c1.difference(with: oldValue?.c1).map { $0.with(offset: c0.length(), oldOffset: oldValue?.c0.length() ?? 0) }
     }
 
     @inline(__always)

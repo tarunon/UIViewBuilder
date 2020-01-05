@@ -105,7 +105,8 @@ class _NativeList: UITableViewController {
     var cache = NativeViewCache()
 
     func update(differences: [Difference]) {
-        differences.forEach { difference in
+        let (removals, insertions, updations) = differences.sorted().staged()
+        func patch(difference: Difference) {
             switch difference.change {
             case .remove:
                 components.remove(at: difference.index)
@@ -119,6 +120,12 @@ class _NativeList: UITableViewController {
                 components[difference.index] = component
                 tableView.reloadRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
             }
+        }
+        tableView.reloadData {
+            (removals + insertions).forEach(patch)
+        }
+        tableView.reloadData {
+            updations.forEach(patch)
         }
     }
 
@@ -180,5 +187,17 @@ public struct List<Body: ComponentBase>: ComponentBase, _Component {
 
     func update(native: NativeViewProtocol) {
         (native as! NativeList<Body>).body = body
+    }
+}
+
+extension UITableView {
+    func reloadData(_ f: () -> ()) {
+        if #available(iOS 11.0, *) {
+            self.performBatchUpdates(f, completion: nil)
+        } else {
+            beginUpdates()
+            f()
+            endUpdates()
+        }
     }
 }

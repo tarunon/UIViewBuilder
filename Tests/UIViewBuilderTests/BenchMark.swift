@@ -119,7 +119,7 @@ class BenchMark: XCTestCase {
          let assets = Array(repeating: [
              Foo(array: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], flag: true, title: "abcde"),
              Foo(array: [6, 7, 8, 9, 10], flag: false, title: "edcba")
-         ], count: 1).flatMap { $0 }
+         ], count: 10).flatMap { $0 }
 
          let vc = UIHostingController(Foo(array: [], flag: true, title: ""))
 
@@ -161,7 +161,7 @@ class BenchMark: XCTestCase {
          let assets = Array(repeating: [
              Foo(array: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], flag: true, title: "abcde"),
              Foo(array: [6, 7, 8, 9, 10], flag: false, title: "edcba")
-         ], count: 1).flatMap { $0 }
+         ], count: 10).flatMap { $0 }
 
          let vc = SwiftUI.UIHostingController(rootView: Foo(array: [], flag: true, title: ""))
 

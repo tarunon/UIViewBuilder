@@ -38,9 +38,8 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
         body.flatMap { $0.create() }
     }
 
-    struct Reducer {
-        var changes: [Difference]
-        var fixedNewComponents: [(component: Component, length: Int)]
+    private struct Reducer {
+        var fixedData: [Data.Element?]
         var fixedOldData: [Data.Element?]
     }
 
@@ -50,38 +49,46 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
             return differenceLegacy(with: oldValue)
         }
         let oldData = oldValue?.data.map { $0 } ?? []
-
         let diff = data.map { $0[keyPath: identify] }.difference(from: oldData.map { $0[keyPath: identify] })
 
-        let reducer = diff.reduce(
-            into: Reducer(
-                changes: [Difference](),
-                fixedNewComponents: oldData.map(creation).map { ($0, $0.length()) },
-                fixedOldData: oldData
-            )
-        ) { (result, change) in
-            let viewIndex = result.fixedNewComponents[0..<change.offset].map { $0.length }.reduce(0, +)
-            switch change {
+        var reducer = diff.insertions.reduce(into: Reducer(fixedData: data.map { $0 }, fixedOldData: oldData)) { (result, difference) in
+            switch difference {
             case .insert(let offset, _, _):
                 result.fixedOldData.insert(nil, at: offset)
-                let component = creation(data[offset])
-                result.fixedNewComponents.insert((component, component.length()), at: offset)
-                result.changes += result.fixedNewComponents[change.offset].component.difference(with: nil).map { $0.with(offset: viewIndex) }
             case .remove(let offset, _, _):
-                result.changes += (viewIndex..<viewIndex + result.fixedNewComponents[change.offset].length).reversed().map { Difference(index: $0, change: .remove(result.fixedNewComponents[offset].component)) }
-                result.fixedOldData.remove(at: offset)
-                result.fixedNewComponents.remove(at: offset)
+                result.fixedData.insert(nil, at: offset)
             }
         }
 
-        return reducer.changes + zip(data, reducer.fixedOldData).reduce(into: (viewIndex: 0, changes: [Difference]())) { (result, value) in
-            let (element, oldValue) = value
-            let component = creation(element)
-            if let oldValue = oldValue {
-                result.changes += component.asAnyComponent().difference(with: creation(oldValue).asAnyComponent()).map { $0.with(offset: result.viewIndex) }
+        reducer = diff.removals.reduce(into: reducer) { (result, difference) in
+           switch difference {
+           case .insert(let offset, _, _):
+               result.fixedOldData.insert(nil, at: offset)
+           case .remove(let offset, _, _):
+               result.fixedData.insert(nil, at: offset)
+           }
+       }
+
+        let components = reducer.fixedData.map { $0.map(creation) }
+        let oldComponents = reducer.fixedOldData.map { $0.map(creation) }
+
+        return zip(components, oldComponents).reduce(into: (viewIndex: 0, oldViewIndex: 0, differences: [Difference]())) { (result, value) in
+            switch value {
+            case (.some(let component), .some(let oldComponent)):
+                result.differences += component.difference(with: oldComponent).map { $0.with(offset: result.viewIndex, oldOffset: result.oldViewIndex) }
+                result.viewIndex += component.length()
+                result.oldViewIndex += oldComponent.length()
+            case (.some(let component), .none):
+                result.differences += component.difference(with: nil).map { $0.with(offset: result.viewIndex, oldOffset: result.oldViewIndex) }
+                result.viewIndex += component.length()
+            case (.none, .some(let oldComponent)):
+                let length = oldComponent.length()
+                result.differences += (result.oldViewIndex..<result.oldViewIndex + length).map { Difference(index: $0, change: .remove(oldComponent)) }
+                result.oldViewIndex += length
+            case (.none, .none):
+                fatalError()
             }
-            result.viewIndex += component.length()
-        }.changes
+        }.differences
     }
 
 

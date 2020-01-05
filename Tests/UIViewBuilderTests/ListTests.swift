@@ -296,8 +296,6 @@ class ListTests: XCTestCase {
             fixture.map { $0.text }
         )
 
-        let expectedNativeIds = vc.visibleViews().map { ObjectIdentifier($0) }
-
         fixture = [
             TestComponent.Identified(id: 4, text: "1"),
             TestComponent.Identified(id: 5, text: "2"),
