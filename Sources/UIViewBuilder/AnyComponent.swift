@@ -13,7 +13,7 @@ public struct AnyComponent: ComponentBase, _Component {
             fatalError()
         }
 
-        func claim(oldValue: AnyComponent.Base?) -> [Difference] {
+        func difference(with oldValue: AnyComponent.Base?) -> [Difference] {
             fatalError()
         }
 
@@ -44,8 +44,8 @@ public struct AnyComponent: ComponentBase, _Component {
         }
 
         @inline(__always)
-        override func claim(oldValue: AnyComponent.Base?) -> [Difference] {
-            body.claim(oldValue: oldValue?.as(Body.self))
+        override func difference(with oldValue: AnyComponent.Base?) -> [Difference] {
+            body.difference(with: oldValue?.as(Body.self))
         }
 
         @inline(__always)
@@ -89,7 +89,7 @@ public struct AnyComponent: ComponentBase, _Component {
         }
 
         @inline(__always)
-        override func claim(oldValue: AnyComponent.Base?) -> [Difference] {
+        override func difference(with oldValue: AnyComponent.Base?) -> [Difference] {
             _traverse(oldValue)
         }
 
@@ -129,8 +129,8 @@ public struct AnyComponent: ComponentBase, _Component {
     }
 
     @inline(__always)
-    func claim(oldValue: AnyComponent?) -> [Difference] {
-        box.claim(oldValue: oldValue?.box)
+    func difference(with oldValue: AnyComponent?) -> [Difference] {
+        box.difference(with: oldValue?.box)
     }
 
     @inline(__always)

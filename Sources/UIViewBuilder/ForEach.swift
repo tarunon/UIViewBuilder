@@ -45,9 +45,9 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
     }
 
     @inline(__always)
-    func claim(oldValue: ForEach?) -> [Difference] {
+    func difference(with oldValue: ForEach?) -> [Difference] {
         guard #available(iOS 13, *) else {
-            return updateLegacy(oldValue: oldValue)
+            return differenceLegacy(with: oldValue)
         }
         let oldData = oldValue?.data.map { $0 } ?? []
 
@@ -66,7 +66,7 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
                 result.fixedOldData.insert(nil, at: offset)
                 let component = creation(data[offset])
                 result.fixedNewComponents.insert((component, component.length()), at: offset)
-                result.changes += result.fixedNewComponents[change.offset].component.claim(oldValue: nil).map { $0.with(offset: viewIndex) }
+                result.changes += result.fixedNewComponents[change.offset].component.difference(with: nil).map { $0.with(offset: viewIndex) }
             case .remove(let offset, _, _):
                 result.changes += (viewIndex..<viewIndex + result.fixedNewComponents[change.offset].length).reversed().map { Difference(index: $0, change: .remove(result.fixedNewComponents[offset].component)) }
                 result.fixedOldData.remove(at: offset)
@@ -78,7 +78,7 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
             let (element, oldValue) = value
             let component = creation(element)
             if let oldValue = oldValue {
-                result.changes += component.asAnyComponent().claim(oldValue: creation(oldValue).asAnyComponent()).map { $0.with(offset: result.viewIndex) }
+                result.changes += component.asAnyComponent().difference(with: creation(oldValue).asAnyComponent()).map { $0.with(offset: result.viewIndex) }
             }
             result.viewIndex += component.length()
         }.changes
@@ -86,7 +86,12 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
 
 
     @inline(__always)
-    func updateLegacy(oldValue: ForEach?) -> [Difference] {
+    func differenceLegacy(with oldValue: ForEach?) -> [Difference] {
+        fatalError()
+    }
+
+    @inline(__always)
+    func update(native: NativeViewProtocol) {
         fatalError()
     }
 

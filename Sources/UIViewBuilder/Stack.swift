@@ -22,7 +22,7 @@ struct VStackConfig: StackConfig {
 class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewProtocol {
     var body: Body {
         didSet {
-            stackView.update(differences: body.claim(oldValue: oldValue), natives: &natives, cache: cache, parent: parent)
+            stackView.update(differences: body.difference(with: oldValue), natives: &natives, cache: cache, parent: parent)
         }
     }
     let cache = NativeViewCache()
@@ -70,7 +70,7 @@ extension StackComponent {
     }
 
     @inline(__always)
-    func claim(oldValue: Self?) -> [Difference] {
+    func difference(with oldValue: Self?) -> [Difference] {
         if oldValue != nil {
             return [Difference(index: 0, change: .update(self))]
         }

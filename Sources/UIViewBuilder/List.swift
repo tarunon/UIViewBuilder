@@ -76,7 +76,7 @@ class NativeCell<Body: ComponentBase>: UITableViewCell, Mountable {
                 native.mount(to: self, at: index, parent: parent)
             }
         } else {
-            update(differences: body.claim(oldValue: oldComponent), natives: &natives, cache: parent.cache, parent: parent)
+            update(differences: body.difference(with: oldComponent), natives: &natives, cache: parent.cache, parent: parent)
         }
     }
 
@@ -138,7 +138,7 @@ class _NativeList: UITableViewController {
 final class NativeList<Body: ComponentBase>: _NativeList {
     var body: Body {
         didSet {
-            update(differences: body.claim(oldValue: oldValue))
+            update(differences: body.difference(with: oldValue))
         }
     }
 
@@ -155,7 +155,7 @@ final class NativeList<Body: ComponentBase>: _NativeList {
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.beginUpdates()
-        update(differences: body.claim(oldValue: nil))
+        update(differences: body.difference(with: nil))
         tableView.endUpdates()
     }
 }
@@ -171,8 +171,11 @@ public struct List<Body: ComponentBase>: ComponentBase, _Component {
         [NativeList(body: body)]
     }
 
-    func claim(oldValue: List?) -> [Difference] {
-        return [Difference(index: 0, change: .update(self))]
+    func difference(with oldValue: List?) -> [Difference] {
+        if oldValue != nil {
+            return [Difference(index: 0, change: .update(self))]
+        }
+        return [Difference(index: 0, change: .insert(self))]
     }
 
     func update(native: NativeViewProtocol) {

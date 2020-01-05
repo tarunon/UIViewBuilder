@@ -55,7 +55,7 @@ extension ComponentSet.Empty: ComponentBase, _Component {
     }
 
     @inline(__always)
-    func claim(oldValue: ComponentSet.Empty?) -> [Difference] {
+    func difference(with oldValue: ComponentSet.Empty?) -> [Difference] {
         []
     }
 
@@ -77,9 +77,9 @@ extension ComponentSet.Pair: ComponentBase, _Component where C0: ComponentBase, 
     }
 
     @inline(__always)
-    func claim(oldValue: ComponentSet.Pair<C0, C1>?) -> [Difference] {
-        c0.claim(oldValue: oldValue?.c0) +
-            c1.claim(oldValue: oldValue?.c1).map { $0.with(offset: c0.length()) }
+    func difference(with oldValue: ComponentSet.Pair<C0, C1>?) -> [Difference] {
+        c0.difference(with: oldValue?.c0) +
+            c1.difference(with: oldValue?.c1).map { $0.with(offset: c0.length()) }
     }
 
     @inline(__always)
@@ -100,23 +100,23 @@ extension ComponentSet.Either: ComponentBase, _Component where C0: ComponentBase
     }
 
     @inline(__always)
-    func claim(oldValue: ComponentSet.Either<C0, C1>?) -> [Difference] {
+    func difference(with oldValue: ComponentSet.Either<C0, C1>?) -> [Difference] {
         var result = [Difference]()
         switch (self, oldValue) {
         case (.c0(let c0), .c0(let oldValue)):
-            result += c0.claim(oldValue: oldValue)
+            result += c0.difference(with: oldValue)
         case (.c1(let c1), .c1(let oldValue)):
-            result += c1.claim(oldValue: oldValue)
+            result += c1.difference(with: oldValue)
         case (.c0(let c0), .c1(let oldValue)):
             result += (0..<oldValue.length()).reversed().map { Difference(index: $0, change: .remove(oldValue)) }
             fallthrough
         case (.c0(let c0), .none):
-            result += c0.claim(oldValue: nil)
+            result += c0.difference(with: nil)
         case (.c1(let c1), .c0(let oldValue)):
             result += (0..<oldValue.length()).reversed().map { Difference(index: $0, change: .remove(oldValue)) }
             fallthrough
         case (.c1(let c1), .none):
-            result += c1.claim(oldValue: nil)
+            result += c1.difference(with: nil)
         }
         return result
     }
