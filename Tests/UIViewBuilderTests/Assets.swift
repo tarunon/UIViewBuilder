@@ -53,3 +53,21 @@ struct Button: NativeRepresentable {
         native.setTitle(text, for: .normal)
     }
 }
+
+struct Block: NativeRepresentable {
+    func create() -> UIView {
+        let native = UIView()
+        native.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate(
+            [
+                native.widthAnchor.constraint(equalToConstant: 100),
+                native.heightAnchor.constraint(equalToConstant: 100)
+            ].map { $0.priority = .defaultLow; return $0 }
+        )
+        return native
+    }
+
+    func update(native: UIView) {
+        
+    }
+}

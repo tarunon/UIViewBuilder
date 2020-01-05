@@ -19,10 +19,10 @@ struct VStackConfig: StackConfig {
     public static let axis: NSLayoutConstraint.Axis = .vertical
 }
 
-final class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewProtocol {
+final class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewProtocol, Mountable {
     var body: Body {
         didSet {
-            stackView.update(differences: body.difference(with: oldValue), natives: &natives, cache: cache, parent: parent)
+            update(differences: body.difference(with: oldValue), natives: &natives, cache: cache, parent: parent)
         }
     }
     let cache = NativeViewCache()
@@ -43,7 +43,7 @@ final class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewPro
     func mount(to target: Mountable, at index: Int, parent: UIViewController) {
         self.parent = parent
         natives.enumerated().forEach { (index, target) in
-            target.mount(to: stackView, at: index, parent: parent)
+            target.mount(to: self, at: index, parent: parent)
         }
         target.mount(view: stackView, at: index)
     }
@@ -51,8 +51,25 @@ final class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewPro
     @inline(__always)
     func unmount(from target: Mountable) {
         target.unmount(view: stackView)
-        natives.reversed().forEach { $0.unmount(from: stackView) }
+        natives.reversed().forEach { $0.unmount(from: self) }
         natives = []
+    }
+
+    func mount(view: UIView, at index: Int) {
+        stackView.insertArrangedSubview(view, at: index)
+    }
+
+    func mount(viewController: UIViewController, at index: Int, parent: UIViewController) {
+        stackView.insertArrangedViewController(viewController, at: index, parentViewController: parent)
+    }
+
+    func unmount(view: UIView) {
+        stackView.removeArrangedSubview(view)
+        view.removeFromSuperview()
+    }
+
+    func unmount(viewController: UIViewController) {
+        stackView.removeArrangedViewController(viewController)
     }
 }
 
@@ -126,24 +143,5 @@ extension UIStackView {
         removeArrangedSubview(viewController.view)
         viewController.view.removeFromSuperview()
         viewController.removeFromParent()
-    }
-}
-
-extension UIStackView: Mountable {
-    func mount(view: UIView, at index: Int) {
-        insertArrangedSubview(view, at: index)
-    }
-
-    func mount(viewController: UIViewController, at index: Int, parent: UIViewController) {
-        insertArrangedViewController(viewController, at: index, parentViewController: parent)
-    }
-
-    func unmount(view: UIView) {
-        removeArrangedSubview(view)
-        view.removeFromSuperview()
-    }
-
-    func unmount(viewController: UIViewController) {
-        removeArrangedViewController(viewController)
     }
 }

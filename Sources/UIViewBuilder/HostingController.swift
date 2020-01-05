@@ -7,7 +7,7 @@
 
 import UIKit
 
-public class _HostingController<Component: ComponentBase>: UIViewController {
+public class _HostingController<Component: ComponentBase>: UIViewController, Mountable {
     class View: UIView {
         weak var parent: _HostingController?
         lazy var stackView = UIStackView()
@@ -34,7 +34,7 @@ public class _HostingController<Component: ComponentBase>: UIViewController {
 
         override func layoutSubviews() {
             if let parent = parent, parent.oldComponent != nil {
-                stackView.update(differences: parent.component.difference(with: parent.oldComponent), natives: &parent.natives, cache: parent.cache, parent: parent)
+                parent.update(differences: parent.component.difference(with: parent.oldComponent), natives: &parent.natives, cache: parent.cache, parent: parent)
                 parent.oldComponent = nil
             }
             super.layoutSubviews()
@@ -69,9 +69,31 @@ public class _HostingController<Component: ComponentBase>: UIViewController {
     public override func viewDidLoad() {
         super.viewDidLoad()
         natives.enumerated().forEach { (index, native) in
-            native.mount(to: _view.stackView, at: index, parent: self)
+            native.mount(to: self, at: index, parent: self)
         }
         oldComponent = nil
+        if #available(iOS 13.0, *) {
+            view.backgroundColor = .systemBackground
+        } else {
+            view.backgroundColor = .white
+        }
+    }
+
+    func mount(view: UIView, at index: Int) {
+        _view.stackView.insertArrangedSubview(view, at: index)
+    }
+
+    func mount(viewController: UIViewController, at index: Int, parent: UIViewController) {
+        _view.stackView.insertArrangedViewController(viewController, at: index, parentViewController: parent)
+    }
+
+    func unmount(view: UIView) {
+        _view.stackView.removeArrangedSubview(view)
+        view.removeFromSuperview()
+    }
+
+    func unmount(viewController: UIViewController) {
+        _view.stackView.removeArrangedViewController(viewController)
     }
 }
 
