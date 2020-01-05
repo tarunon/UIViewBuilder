@@ -8,7 +8,7 @@
 import UIKit
 
 fileprivate extension ComponentBase {
-    typealias Cell = NativeCell<Self>
+    typealias Cell = NativeTableViewCell<Self>
     
     func registerCell(to parent: _NativeList) {
         parent.tableView.register(Cell.self, forCellReuseIdentifier: reuseIdentifier)
@@ -21,7 +21,7 @@ fileprivate extension ComponentBase {
     }
 }
 
-class NativeCell<Body: ComponentBase>: UITableViewCell, Mountable {
+class NativeTableViewCell<Body: ComponentBase>: UITableViewCell, Mountable {
     weak var parentViewController: UIViewController?
     var contentViewControllers: [UIViewController] = []
     var oldComponent: Body?

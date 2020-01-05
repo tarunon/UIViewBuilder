@@ -32,17 +32,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if #available(iOS 13.0, *) {
         } else {
 
+
             for codePoint in 0x1F600...0x1F64F {
                 guard let scalarValue = Unicode.Scalar(codePoint) else {
                     continue
                 }
                 emoji.append(String(scalarValue))
             }
-            
+
             let window = UIWindow()
+
             window.rootViewController = vc
-            window.makeKeyAndVisible()
             self.window = window
+            window.makeKeyAndVisible()
 
             Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(shuffle), userInfo: nil, repeats: true)
         }
@@ -50,7 +52,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     @objc func shuffle() {
-        vc.component.body.data = emoji.shuffled()
+        let timestamp = Date().timeIntervalSince1970
+        vc.component.body.data = Array(emoji.shuffled()[0..<Int.random(in: 0..<emoji.count)])
+        print(String(format: "Reload take %.5f seconds", Date().timeIntervalSince1970 - timestamp))
     }
 
 
