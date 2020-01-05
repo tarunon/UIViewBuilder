@@ -10,7 +10,11 @@ import UIKit
 fileprivate extension ComponentBase {
     typealias Cell = NativeTableViewCell<Self>
     
-    func registerCell(to parent: _NativeList) {
+    static func registerCellIfNeeded(to parent: _NativeList) {
+        if parent.registedIdentifiers.contains(reuseIdentifier) {
+            return
+        }
+        parent.registedIdentifiers.insert(reuseIdentifier)
         parent.tableView.register(Cell.self, forCellReuseIdentifier: reuseIdentifier)
     }
     
@@ -104,6 +108,7 @@ class NativeTableViewCell<Body: ComponentBase>: UITableViewCell, Mountable {
 class _NativeList: UITableViewController {
     var components: [ComponentBase] = []
     var cache = NativeViewCache()
+    var registedIdentifiers = Set<String>()
 
     func update(differences: [Difference]) {
         let (removals, insertions, updations) = differences.sorted().staged()
@@ -113,11 +118,11 @@ class _NativeList: UITableViewController {
                 components.remove(at: difference.index)
                 tableView.deleteRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
             case .insert(let component):
-                component.registerCell(to: self)
+                type(of: component).registerCellIfNeeded(to: self)
                 components.insert(component, at: difference.index)
                 tableView.insertRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
             case .update(let component):
-                component.registerCell(to: self)
+                type(of: component).registerCellIfNeeded(to: self)
                 components[difference.index] = component
                 tableView.reloadRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
             }

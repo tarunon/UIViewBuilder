@@ -101,6 +101,10 @@ extension ComponentSet.Either: ComponentBase, _Component where C0: ComponentBase
 
     @inline(__always)
     func difference(with oldValue: ComponentSet.Either<C0, C1>?) -> [Difference] {
+        if C0.self is C1.Type && C1.self is C0.Type {
+            return c0?.difference(with: oldValue?.c0 ?? (oldValue?.c1 as? C0)) ??
+                c1?.difference(with: oldValue?.c1 ?? (oldValue?.c0 as? C1)) ?? []
+        }
         var result = [Difference]()
         switch (self, oldValue) {
         case (.c0(let c0), .c0(let oldValue)):
