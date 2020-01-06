@@ -14,9 +14,12 @@ struct Difference: Comparable {
         case (.remove, _): return true
         case (.insert, .remove): return false
         case (.insert, .insert): return lhs.index < rhs.index
-        case (.insert, .update): return true
+        case (.insert, _): return true
+        case (.update, .remove): return false
+        case (.update, .insert): return false
         case (.update, .update): return lhs.index < rhs.index
-        case (.update, _): return false
+        case (.update, _): return true
+        case (.stable, _): return false
         }
     }
 
@@ -25,6 +28,7 @@ struct Difference: Comparable {
         case (.insert, .insert): return lhs.index == rhs.index
         case (.remove, .remove): return lhs.index == rhs.index
         case (.update, .update): return lhs.index == rhs.index
+        case (.stable, .stable): return lhs.index == rhs.index
         default: return false
         }
     }
@@ -33,6 +37,7 @@ struct Difference: Comparable {
         case insert(ComponentBase)
         case update(ComponentBase)
         case remove(ComponentBase)
+        case stable(ComponentBase)
     }
     var index: Int
     var change: Change
@@ -42,7 +47,7 @@ struct Difference: Comparable {
         switch self.change {
         case .remove:
             index += oldOffset
-        case .insert, .update:
+        case .insert, .update, .stable:
             index += offset
         }
         return Difference(index: index, change: change)
@@ -50,8 +55,8 @@ struct Difference: Comparable {
 }
 
 extension Collection where Element == Difference {
-    func staged() -> (removals: [Difference], insertions: [Difference], updations: [Difference]) {
-        return reduce(into: (removals: [Difference](), insertions: [Difference](), updations: [Difference]())) { (result, difference) in
+    func staged() -> (removals: [Difference], insertions: [Difference], updations: [Difference], stables: [Difference]) {
+        return reduce(into: (removals: [Difference](), insertions: [Difference](), updations: [Difference](), stables: [Difference]())) { (result, difference) in
             switch difference.change {
             case .insert:
                 result.insertions.append(difference)
@@ -59,6 +64,8 @@ extension Collection where Element == Difference {
                 result.updations.append(difference)
             case .remove:
                 result.removals.append(difference)
+            case .stable:
+                result.stables.append(difference)
             }
         }
     }

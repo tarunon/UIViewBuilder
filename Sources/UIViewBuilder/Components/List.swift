@@ -111,7 +111,7 @@ class _NativeList: UITableViewController {
     var registedIdentifiers = Set<String>()
 
     func update(differences: [Difference]) {
-        let (removals, insertions, updations) = differences.sorted().staged()
+        let (removals, insertions, updations, _) = differences.sorted().staged()
         func patch(difference: Difference) {
             switch difference.change {
             case .remove:

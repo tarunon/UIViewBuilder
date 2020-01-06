@@ -29,6 +29,8 @@ extension Mountable {
                 natives.insert(native, at: difference.index)
             case .update(let component):
                 component.update(native: natives[difference.index])
+            case .stable:
+                break
             }
         }
     }

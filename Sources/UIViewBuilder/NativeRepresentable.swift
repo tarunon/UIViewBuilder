@@ -31,7 +31,7 @@ extension _NativeRepresentable {
             if !self.isEqual(to: oldValue) {
                 return [Difference(index: 0, change: .update(self))]
             }
-            return []
+            return [Difference(index: 0, change: .stable(self))]
         }
         return [Difference(index: 0, change: .insert(self))]
     }
@@ -54,7 +54,7 @@ extension NativeRepresentable {
             if !self.isEqual(to: oldValue) {
                 return [Difference(index: 0, change: .update(self))]
             }
-            return []
+            return [Difference(index: 0, change: .stable(self))]
         }
         return [Difference(index: 0, change: .insert(self))]
     }
