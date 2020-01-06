@@ -14,36 +14,36 @@ public protocol ComponentBase {
 extension ComponentBase {
     @inline(__always)
     func create() -> [NativeViewProtocol] {
-        asAnyComponent().create()
+        asAnyComponent()._create()
     }
 
     @inline(__always)
     func difference(with oldValue: Self?) -> [Difference] {
-        asAnyComponent().difference(with: oldValue?.asAnyComponent())
+        asAnyComponent()._difference(with: oldValue?.asAnyComponent())
     }
 
     @inline(__always)
     func update(native: NativeViewProtocol) {
-        asAnyComponent().update(native: native)
+        asAnyComponent()._update(native: native)
     }
 
     @inline(__always)
     func length() -> Int {
-        asAnyComponent().length()
+        asAnyComponent()._length()
     }
 
     @inline(__always)
     func isEqual(to other: Self?) -> Bool {
-        asAnyComponent().isEqual(to: other?.asAnyComponent())
+        asAnyComponent()._isEqual(to: other?.asAnyComponent())
     }
 }
 
 protocol _Component: ComponentBase {
-    func create() -> [NativeViewProtocol]
-    func difference(with oldValue: Self?) -> [Difference]
-    func update(native: NativeViewProtocol)
-    func length() -> Int
-    func isEqual(to other: Self?) -> Bool
+    func _create() -> [NativeViewProtocol]
+    func _difference(with oldValue: Self?) -> [Difference]
+    func _update(native: NativeViewProtocol)
+    func _length() -> Int
+    func _isEqual(to other: Self?) -> Bool
 }
 
 extension _Component {
@@ -54,14 +54,14 @@ extension _Component {
 
 extension _Component {
     @inline(__always)
-    func isEqual(to other: Self?) -> Bool {
+    func _isEqual(to other: Self?) -> Bool {
         false
     }
 }
 
 extension _Component where Self: Equatable {
     @inline(__always)
-    func isEqual(to other: Self?) -> Bool {
+    func _isEqual(to other: Self?) -> Bool {
         self == other
     }
 }

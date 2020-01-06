@@ -9,23 +9,23 @@ import UIKit
 
 public struct AnyComponent: ComponentBase, _Component {
     class Base: _Component {
-        func create() -> [NativeViewProtocol] {
+        func _create() -> [NativeViewProtocol] {
             fatalError()
         }
 
-        func difference(with oldValue: AnyComponent.Base?) -> [Difference] {
+        func _difference(with oldValue: AnyComponent.Base?) -> [Difference] {
             fatalError()
         }
 
-        func update(native: NativeViewProtocol) {
+        func _update(native: NativeViewProtocol) {
             fatalError()
         }
 
-        func length() -> Int {
+        func _length() -> Int {
             fatalError()
         }
 
-        func isEqual(to other: AnyComponent.Base?) -> Bool {
+        func _isEqual(to other: AnyComponent.Base?) -> Bool {
             fatalError()
         }
 
@@ -43,28 +43,28 @@ public struct AnyComponent: ComponentBase, _Component {
 
     final class GenericBox<Content: ComponentBase & _Component>: Box<Content> {
         @inline(__always)
-        override func create() -> [NativeViewProtocol] {
-            content.create()
+        override func _create() -> [NativeViewProtocol] {
+            content._create()
         }
 
         @inline(__always)
-        override func difference(with oldValue: AnyComponent.Base?) -> [Difference] {
-            content.difference(with: oldValue?.as(Content.self))
+        override func _difference(with oldValue: AnyComponent.Base?) -> [Difference] {
+            content._difference(with: oldValue?.as(Content.self))
         }
 
         @inline(__always)
-        override func update(native: NativeViewProtocol) {
-            content.update(native: native)
+        override func _update(native: NativeViewProtocol) {
+            content._update(native: native)
         }
 
         @inline(__always)
-        override func length() -> Int {
-            content.length()
+        override func _length() -> Int {
+            content._length()
         }
 
         @inline(__always)
-        override func isEqual(to other: Base?) -> Bool {
-            content.isEqual(to: other?.as(Content.self))
+        override func _isEqual(to other: Base?) -> Bool {
+            content._isEqual(to: other?.as(Content.self))
         }
     }
 
@@ -75,45 +75,45 @@ public struct AnyComponent: ComponentBase, _Component {
     typealias IsEqualTo<Component> = (Component?) -> Bool
 
     final class ClosureBox<Content: ComponentBase>: Box<Content> {
-        var _create: Create
-        var _traverse: Traverse<Base>
-        var _update: Update
-        var _length: Length
-        var _isEqualTo: IsEqualTo<Base>
+        var create: Create
+        var traverse: Traverse<Base>
+        var update: Update
+        var length: Length
+        var isEqualTo: IsEqualTo<Base>
 
         init(create: @escaping Create, traverse: @escaping Traverse<Content>, update: @escaping Update, length: @escaping Length, isEqualTo: @escaping IsEqualTo<Content>, content: Content) {
-            self._create = create
-            self._traverse = { traverse($0?.as(Content.self)) }
-            self._update = update
-            self._length = length
-            self._isEqualTo = { isEqualTo($0?.as(Content.self)) }
+            self.create = create
+            self.traverse = { traverse($0?.as(Content.self)) }
+            self.update = update
+            self.length = length
+            self.isEqualTo = { isEqualTo($0?.as(Content.self)) }
             super.init(content: content)
         }
 
         @inline(__always)
-        override func create() -> [NativeViewProtocol] {
-            _create()
+        override func _create() -> [NativeViewProtocol] {
+            create()
         }
 
         @inline(__always)
-        override func update(native: NativeViewProtocol) {
-            _update(native)
+        override func _update(native: NativeViewProtocol) {
+            update(native)
         }
 
         @inline(__always)
-        override func difference(with oldValue: AnyComponent.Base?) -> [Difference] {
-            _traverse(oldValue)
+        override func _difference(with oldValue: AnyComponent.Base?) -> [Difference] {
+            traverse(oldValue)
         }
 
         @inline(__always)
-        override func length() -> Int {
-            _length()
+        override func _length() -> Int {
+            length()
         }
 
 
         @inline(__always)
-        override func isEqual(to other: Base?) -> Bool {
-            _isEqualTo(other)
+        override func _isEqual(to other: Base?) -> Bool {
+            isEqualTo(other)
         }
     }
 
@@ -154,27 +154,27 @@ public struct AnyComponent: ComponentBase, _Component {
     }
 
     @inline(__always)
-    func create() -> [NativeViewProtocol] {
-        box.create()
+    func _create() -> [NativeViewProtocol] {
+        box._create()
     }
 
     @inline(__always)
-    func difference(with oldValue: AnyComponent?) -> [Difference] {
-        box.difference(with: oldValue?.box)
+    func _difference(with oldValue: AnyComponent?) -> [Difference] {
+        box._difference(with: oldValue?.box)
     }
 
     @inline(__always)
-    func update(native: NativeViewProtocol) {
-        box.update(native: native)
+    func _update(native: NativeViewProtocol) {
+        box._update(native: native)
     }
 
     @inline(__always)
-    func length() -> Int {
-        box.length()
+    func _length() -> Int {
+        box._length()
     }
 
     @inline(__always)
-    func isEqual(to other: AnyComponent?) -> Bool {
-        box.isEqual(to: other?.box)
+    func _isEqual(to other: AnyComponent?) -> Bool {
+        box._isEqual(to: other?.box)
     }
 }

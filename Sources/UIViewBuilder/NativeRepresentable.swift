@@ -21,12 +21,12 @@ protocol _NativeRepresentable: _Component {
 
 extension _NativeRepresentable {
     @inline(__always)
-    func create() -> [NativeViewProtocol] {
+    func _create() -> [NativeViewProtocol] {
         [create()]
     }
 
     @inline(__always)
-    func difference(with oldValue: Self?) -> [Difference] {
+    func _difference(with oldValue: Self?) -> [Difference] {
         if let oldValue = oldValue {
             if !self.isEqual(to: oldValue) {
                 return [Difference(index: 0, change: .update(self))]
@@ -37,12 +37,12 @@ extension _NativeRepresentable {
     }
 
     @inline(__always)
-    func update(native: NativeViewProtocol) {
+    func _update(native: NativeViewProtocol) {
         update(native: native as! Native)
     }
 
     @inline(__always)
-    func length() -> Int {
+    func _length() -> Int {
         1
     }
 }

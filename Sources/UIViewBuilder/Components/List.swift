@@ -125,6 +125,8 @@ class _NativeList: UITableViewController {
                 type(of: component).registerCellIfNeeded(to: self)
                 components[difference.index] = component
                 tableView.reloadRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
+            case .stable:
+                break
             }
         }
         tableView.reloadData {

@@ -24,7 +24,7 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
     }
 
     @inline(__always)
-    func create() -> [NativeViewProtocol] {
+    func _create() -> [NativeViewProtocol] {
         content.flatMap { $0.create() }
     }
 
@@ -58,7 +58,7 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
     }
 
     @inline(__always)
-    func difference(with oldValue: ForEach?) -> [Difference] {
+    func _difference(with oldValue: ForEach?) -> [Difference] {
         guard #available(iOS 13, *) else {
             return differenceLegacy(with: oldValue)
         }
@@ -101,12 +101,12 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
     }
 
     @inline(__always)
-    func update(native: NativeViewProtocol) {
+    func _update(native: NativeViewProtocol) {
         fatalError()
     }
 
     @inline(__always)
-    func length() -> Int {
+    func _length() -> Int {
         content.map { $0.length() }.reduce(0, +)
     }
 }
