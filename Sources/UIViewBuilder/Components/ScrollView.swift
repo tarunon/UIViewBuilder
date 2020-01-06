@@ -7,8 +7,8 @@
 
 import UIKit
 
-final class NativeScrollView<Body: ComponentBase>: NativeViewProtocol, Mountable {
-    var axes: AxisSet {
+final class NativeScrollView<Content: ComponentBase>: NativeViewProtocol, Mountable {
+    var axes: Axis.Set {
         didSet {
             if oldValue != self.axes {
                 deactivateConstraints()
@@ -16,14 +16,14 @@ final class NativeScrollView<Body: ComponentBase>: NativeViewProtocol, Mountable
             }
         }
     }
-    var body: Body{
+    var content: Content{
         didSet {
-            update(differences: body.difference(with: oldValue), natives: &natives, cache: cache, parent: parent)
+            update(differences: content.difference(with: oldValue), natives: &natives, cache: cache, parent: parent)
         }
     }
 
     let cache = NativeViewCache()
-    lazy var natives = self.body.create()
+    lazy var natives = self.content.create()
     lazy var scrollView = lazy(type: UIScrollView.self) {
         let scrollView = UIScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -34,9 +34,9 @@ final class NativeScrollView<Body: ComponentBase>: NativeViewProtocol, Mountable
     var widthConstraints = [NSLayoutConstraint]()
     var heightConstraints = [NSLayoutConstraint]()
 
-    init(axis: AxisSet, body: Body) {
-        self.axes = axis
-        self.body = body
+    init(axes: Axis.Set, content: Content) {
+        self.axes = axes
+        self.content = content
     }
 
     @inline(__always)
@@ -98,11 +98,6 @@ final class NativeScrollView<Body: ComponentBase>: NativeViewProtocol, Mountable
     }
 
     @inline(__always)
-    func length() -> Int {
-        return 1
-    }
-
-    @inline(__always)
     func mount(viewController: UIViewController, at index: Int, parent: UIViewController) {
         scrollView.insertViewController(viewController, at: index, parentViewController: parent)
         activateConstraints(with: viewController.view)
@@ -125,44 +120,25 @@ final class NativeScrollView<Body: ComponentBase>: NativeViewProtocol, Mountable
     }
 }
 
-public struct AxisSet: OptionSet {
-    public var rawValue: Int
+public struct ScrollView<Content: ComponentBase>: ComponentBase, _NativeRepresentable {
+    typealias Native = NativeScrollView<Content>
+    public var axes: Axis.Set
+    public var content: Content
 
-    public static let horizontal = AxisSet(rawValue: 1 << 0)
-    public static let vertical = AxisSet(rawValue: 1 << 1)
-
-    public init(rawValue: Int) {
-        self.rawValue = rawValue
-    }
-}
-
-public struct ScrollView<Body: ComponentBase>: ComponentBase, _Component {
-    public var axis: AxisSet
-    public var body: Body
-
-    public init(axes: AxisSet = .vertical, @ComponentBuilder creation: () -> Body) {
-        self.axis = axes
-        self.body = creation()
+    public init(axes: Axis.Set = .vertical, @ComponentBuilder creation: () -> Content) {
+        self.axes = axes
+        self.content = creation()
     }
 
     @inline(__always)
-    func create() -> [NativeViewProtocol] {
-        [NativeScrollView(axis: axis, body: body)]
+    func create() -> NativeScrollView<Content> {
+        NativeScrollView(axes: axes, content: content)
     }
 
     @inline(__always)
-    func difference(with oldValue: Self?) -> [Difference] {
-        if oldValue != nil {
-            return [Difference(index: 0, change: .update(self))]
-        }
-        return [Difference(index: 0, change: .insert(self))]
-    }
-
-    @inline(__always)
-    func update(native: NativeViewProtocol) {
-        let native = native as! NativeScrollView<Body>
-        native.axes = axis
-        native.body = body
+    func update(native: NativeScrollView<Content>) {
+        native.axes = axes
+        native.content = content
     }
 }
 

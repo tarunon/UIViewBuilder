@@ -81,7 +81,7 @@ class ScrollViewTests: XCTestCase {
 
     func testAxisChanges() {
         struct TestComponent: Component, Equatable {
-            var axes: AxisSet
+            var axes: Axis.Set
             var body: AnyComponent {
                 AnyComponent {
                     ScrollView(axes: axes) {
@@ -100,7 +100,7 @@ class ScrollViewTests: XCTestCase {
         }
 
         testComponent(
-            fixtureType: AxisSet.self,
+            fixtureType: Axis.Set.self,
             creation: {
                 TestComponent(axes: $0)
             },

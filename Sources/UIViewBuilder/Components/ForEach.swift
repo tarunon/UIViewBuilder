@@ -13,7 +13,7 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
     var creation: (Data.Element) -> Component
     var identify: KeyPath<Data.Element, ID>
 
-    var body: [Component] {
+    var content: [Component] {
         data.map(creation)
     }
 
@@ -25,7 +25,7 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
 
     @inline(__always)
     func create() -> [NativeViewProtocol] {
-        body.flatMap { $0.create() }
+        content.flatMap { $0.create() }
     }
 
     private struct Reducer {
@@ -35,10 +35,10 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
 
     @inline(__always)
     private func difference(reducer: Reducer, oldCreation: (Data.Element) -> Component) -> [Difference] {
-        let components = reducer.fixedData.map { $0.map(creation) }
-        let oldComponents = reducer.fixedOldData.map { $0.map(oldCreation) }
+        let content = reducer.fixedData.map { $0.map(creation) }
+        let oldContent = reducer.fixedOldData.map { $0.map(oldCreation) }
 
-        return zip(components, oldComponents).reduce(into: (viewIndex: 0, oldViewIndex: 0, differences: [Difference]())) { (result, value) in
+        return zip(content, oldContent).reduce(into: (viewIndex: 0, oldViewIndex: 0, differences: [Difference]())) { (result, value) in
             switch value {
             case (.some(let component), .some(let oldComponent)):
                 result.differences += component.difference(with: oldComponent).map { $0.with(offset: result.viewIndex, oldOffset: result.oldViewIndex) }
@@ -107,7 +107,7 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
 
     @inline(__always)
     func length() -> Int {
-        body.map { $0.length() }.reduce(0, +)
+        content.map { $0.length() }.reduce(0, +)
     }
 }
 

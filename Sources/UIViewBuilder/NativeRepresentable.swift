@@ -13,7 +13,42 @@ public protocol NativeRepresentable: ComponentBase {
     func update(native: Native)
 }
 
+protocol _NativeRepresentable: _Component {
+    associatedtype Native: NativeViewProtocol
+    func create() -> Native
+    func update(native: Native)
+}
+
+extension _NativeRepresentable {
+    @inline(__always)
+    func create() -> [NativeViewProtocol] {
+        [create()]
+    }
+
+    @inline(__always)
+    func difference(with oldValue: Self?) -> [Difference] {
+        if let oldValue = oldValue {
+            if !self.isEqual(to: oldValue) {
+                return [Difference(index: 0, change: .update(self))]
+            }
+            return []
+        }
+        return [Difference(index: 0, change: .insert(self))]
+    }
+
+    @inline(__always)
+    func update(native: NativeViewProtocol) {
+        update(native: native as! Native)
+    }
+
+    @inline(__always)
+    func length() -> Int {
+        1
+    }
+}
+
 extension NativeRepresentable {
+    @inline(__always)
     func traverse(oldValue: Self?) -> [Difference] {
         if let oldValue = oldValue {
             if !self.isEqual(to: oldValue) {
@@ -32,14 +67,14 @@ public protocol UIViewRepresentable: NativeRepresentable where Native: UIView {
 public extension UIViewRepresentable {
     @inline(__always)
     func asAnyComponent() -> AnyComponent {
-        AnyComponent(body: self)
+        AnyComponent(content: self)
     }
 }
 
 public extension UIViewRepresentable where Self: Equatable {
     @inline(__always)
     func asAnyComponent() -> AnyComponent {
-        AnyComponent(body: self)
+        AnyComponent(content: self)
     }
 }
 
@@ -49,7 +84,7 @@ public protocol UIViewControllerRepresentable: NativeRepresentable where Native:
 extension UIViewControllerRepresentable {
     @inline(__always)
     func asAnyComponent() -> AnyComponent {
-        AnyComponent(body: self)
+        AnyComponent(content: self)
     }
 }
 
@@ -57,6 +92,6 @@ extension UIViewControllerRepresentable {
 public extension UIViewControllerRepresentable where Self: Equatable {
     @inline(__always)
     func asAnyComponent() -> AnyComponent {
-        AnyComponent(body: self)
+        AnyComponent(content: self)
     }
 }

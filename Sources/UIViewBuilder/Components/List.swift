@@ -20,15 +20,15 @@ fileprivate extension ComponentBase {
     
     func dequeueCell(from parent: _NativeList, indexPath: IndexPath) -> UITableViewCell {
         let cell = parent.tableView.dequeueReusableCell(withIdentifier: reuseIdentifier, for: indexPath) as! Cell
-        cell.render(body: self, parent: parent)
+        cell.update(content: self, parent: parent)
         return cell
     }
 }
 
-class NativeTableViewCell<Body: ComponentBase>: UITableViewCell, Mountable {
+class NativeTableViewCell<Content: ComponentBase>: UITableViewCell, Mountable {
     weak var parentViewController: UIViewController?
     var contentViewControllers: [UIViewController] = []
-    var oldComponent: Body?
+    var oldComponent: Content?
     var natives: [NativeViewProtocol]!
     lazy var stackView = lazy(type: UIStackView.self) {
         let stackView = UIStackView()
@@ -73,16 +73,16 @@ class NativeTableViewCell<Body: ComponentBase>: UITableViewCell, Mountable {
         super.prepareForReuse()
     }
 
-    func render(body: Body, parent: _NativeList) {
+    func update(content: Content, parent: _NativeList) {
         if natives == nil {
-            natives = body.create()
+            natives = content.create()
             natives.enumerated().forEach { index, native in
                 native.mount(to: self, at: index, parent: parent)
             }
         } else {
-            update(differences: body.difference(with: oldComponent), natives: &natives, cache: parent.cache, parent: parent)
+            update(differences: content.difference(with: oldComponent), natives: &natives, cache: parent.cache, parent: parent)
         }
-        oldComponent = body
+        oldComponent = content
     }
 
     func mount(view: UIView, at index: Int) {
@@ -148,15 +148,15 @@ class _NativeList: UITableViewController {
     }
 }
 
-final class NativeList<Body: ComponentBase>: _NativeList {
-    var body: Body {
+final class NativeList<Content: ComponentBase>: _NativeList {
+    var content: Content {
         didSet {
-            update(differences: body.difference(with: oldValue))
+            update(differences: content.difference(with: oldValue))
         }
     }
 
-    init(body: Body) {
-        self.body = body
+    init(content: Content) {
+        self.content = content
         super.init(style: .plain)
     }
 
@@ -168,31 +168,28 @@ final class NativeList<Body: ComponentBase>: _NativeList {
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.beginUpdates()
-        update(differences: body.difference(with: nil))
+        update(differences: content.difference(with: nil))
         tableView.endUpdates()
     }
 }
 
-public struct List<Body: ComponentBase>: ComponentBase, _Component {
-    public var body: Body
+public struct List<Content: ComponentBase>: ComponentBase, _NativeRepresentable {
+    typealias Native = NativeList<Content>
 
-    public init(@ComponentBuilder creation: () -> Body) {
-        self.body = creation()
+    public var content: Content
+
+    public init(@ComponentBuilder creation: () -> Content) {
+        self.content = creation()
     }
 
-    func create() -> [NativeViewProtocol] {
-        [NativeList(body: body)]
+    @inline(__always)
+    func create() -> NativeList<Content> {
+        NativeList(content: content)
     }
 
-    func difference(with oldValue: List?) -> [Difference] {
-        if oldValue != nil {
-            return [Difference(index: 0, change: .update(self))]
-        }
-        return [Difference(index: 0, change: .insert(self))]
-    }
-
-    func update(native: NativeViewProtocol) {
-        (native as! NativeList<Body>).body = body
+    @inline(__always)
+    func update(native: NativeList<Content>) {
+        native.content = content
     }
 }
 

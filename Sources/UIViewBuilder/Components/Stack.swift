@@ -8,26 +8,26 @@
 import UIKit
 
 protocol StackConfig {
-    static var axis: NSLayoutConstraint.Axis { get }
+    static var axis: Axis { get }
 }
 
 struct HStackConfig: StackConfig {
-    public static let axis: NSLayoutConstraint.Axis = .horizontal
+    public static let axis = Axis.horizontal
 }
 
 struct VStackConfig: StackConfig {
-    public static let axis: NSLayoutConstraint.Axis = .vertical
+    public static let axis = Axis.vertical
 }
 
-final class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewProtocol, Mountable {
-    var body: Body {
+final class NativeStack<Content: ComponentBase, Config: StackConfig>: NativeViewProtocol, Mountable {
+    var content: Content {
         didSet {
-            update(differences: body.difference(with: oldValue), natives: &natives, cache: cache, parent: parent)
+            update(differences: content.difference(with: oldValue), natives: &natives, cache: cache, parent: parent)
         }
     }
     let cache = NativeViewCache()
     lazy var natives = lazy(type: [NativeViewProtocol].self) {
-        let natives = self.body.create()
+        let natives = self.content.create()
         natives.enumerated().forEach { (index, target) in
             target.mount(to: self, at: index, parent: parent)
         }
@@ -35,14 +35,14 @@ final class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewPro
     }
     lazy var stackView = lazy(type: UIStackView.self) {
         let stackView = UIStackView()
-        stackView.axis = Config.axis
+        stackView.axis = Config.axis.nativeLayoutConstraint
         stackView.translatesAutoresizingMaskIntoConstraints = false
         return stackView
     }
     var parent: UIViewController!
 
-    init(config: Config.Type, body: Body) {
-        self.body = body
+    init(config: Config.Type, content: Content) {
+        self.content = content
     }
 
     @inline(__always)
@@ -78,53 +78,39 @@ final class NativeStack<Body: ComponentBase, Config: StackConfig>: NativeViewPro
     }
 }
 
-protocol StackComponent: _Component {
+protocol StackComponent: _NativeRepresentable where Native == NativeStack<Content, Config> {
     associatedtype Config: StackConfig
-    associatedtype Body: ComponentBase
-    var body: Body { get }
+    associatedtype Content: ComponentBase
+    var content: Content { get }
 }
 
 extension StackComponent {
     @inline(__always)
-    func create() -> [NativeViewProtocol] {
-        [NativeStack(config: Config.self, body: self.body)]
+    func create() -> NativeStack<Content, Config> {
+        NativeStack(config: Config.self, content: content)
     }
 
     @inline(__always)
-    func difference(with oldValue: Self?) -> [Difference] {
-        if oldValue != nil {
-            return [Difference(index: 0, change: .update(self))]
-        }
-        return [Difference(index: 0, change: .insert(self))]
-    }
-
-    @inline(__always)
-    func update(native: NativeViewProtocol) {
-        let native = native as! NativeStack<Body, Config>
-        native.body = body
-    }
-
-    @inline(__always)
-    func length() -> Int {
-        return 1
+    func update(native: NativeStack<Content, Config>) {
+        native.content = content
     }
 }
 
-public struct HStack<Body: ComponentBase>: ComponentBase, StackComponent {
+public struct HStack<Content: ComponentBase>: ComponentBase, StackComponent {
     typealias Config = HStackConfig
-    public var body: Body
+    public var content: Content
 
-    public init(@ComponentBuilder creation: () -> Body) {
-        self.body = creation()
+    public init(@ComponentBuilder creation: () -> Content) {
+        self.content = creation()
     }
 }
 
-public struct VStack<Body: ComponentBase>: ComponentBase, StackComponent {
+public struct VStack<Content: ComponentBase>: ComponentBase, StackComponent {
     typealias Config = VStackConfig
-    public var body: Body
+    public var content: Content
 
-    public init(@ComponentBuilder creation: () -> Body) {
-        self.body = creation()
+    public init(@ComponentBuilder creation: () -> Content) {
+        self.content = creation()
     }
 }
 

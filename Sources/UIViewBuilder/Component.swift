@@ -48,7 +48,7 @@ protocol _Component: ComponentBase {
 
 extension _Component {
     public func asAnyComponent() -> AnyComponent {
-        AnyComponent(body: self)
+        AnyComponent(content: self)
     }
 }
 
@@ -84,7 +84,7 @@ extension Component {
             update: body.update(native:),
             length: body.length,
             isEqualTo: { _ in false },
-            body: self
+            content: self
         )
     }
 }
