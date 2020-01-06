@@ -5,19 +5,13 @@
 //  Created by tarunon on 2020/01/06.
 //
 
-private extension ComponentBase {
-    func modify<Modifier>(modifier: Modifier) -> ComponentBase {
-        return ModifiedContent(content: self, modifier: modifier)
-    }
-}
-
 extension ComponentBase {
     func modify<Modifier: ComponentModifier>(modifier: Modifier) -> ComponentBase {
         return ModifiedContent(content: self, modifier: modifier)
     }
 }
 
-protocol ComponentModifier {
+public protocol ComponentModifier: MaybeEquatable {
     associatedtype Content: ComponentBase
 }
 
@@ -28,7 +22,7 @@ extension ComponentModifier {
 }
 
 extension Difference {
-    func with<Modifier>(modifier: Modifier, changed: Bool) -> Difference {
+    func with<Modifier: ComponentModifier>(modifier: Modifier, changed: Bool) -> Difference {
         switch self.change {
         case .insert(let component):
             return Difference(index: index, change: .insert(component.modify(modifier: modifier)))
@@ -45,7 +39,7 @@ extension Difference {
 
 protocol ModifiedComponent: _Component {
     associatedtype Content: ComponentBase
-    associatedtype Modifier
+    associatedtype Modifier: ComponentModifier
 
     var content: Content { get }
     var modifier: Modifier { get }
@@ -70,21 +64,12 @@ extension ModifiedComponent {
     @inline(__always)
     func _difference(with oldValue: Self?) -> [Difference] {
         content.difference(with: oldValue?.content).map {
-            $0.with(modifier: modifier, changed: true)
+            $0.with(modifier: modifier, changed: !self.modifier.isEqual(to: oldValue?.modifier))
         }
     }
 }
 
-extension ModifiedComponent where Modifier: Equatable {
-    @inline(__always)
-    func _difference(with oldValue: Self?) -> [Difference] {
-        content.difference(with: oldValue?.content).map {
-            $0.with(modifier: modifier, changed: self.modifier != oldValue?.modifier)
-        }
-    }
-}
-
-public struct ModifiedContent<Content: ComponentBase, Modifier>: ComponentBase, ModifiedComponent {
+public struct ModifiedContent<Content: ComponentBase, Modifier: ComponentModifier>: ComponentBase, ModifiedComponent {
     public var content: Content
     public var modifier: Modifier
 

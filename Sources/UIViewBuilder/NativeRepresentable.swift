@@ -71,25 +71,10 @@ public extension UIViewRepresentable {
     }
 }
 
-public extension UIViewRepresentable where Self: Equatable {
-    @inline(__always)
-    func asAnyComponent() -> AnyComponent {
-        AnyComponent(content: self)
-    }
-}
-
 public protocol UIViewControllerRepresentable: NativeRepresentable where Native: UIViewController {
 }
 
 extension UIViewControllerRepresentable {
-    @inline(__always)
-    func asAnyComponent() -> AnyComponent {
-        AnyComponent(content: self)
-    }
-}
-
-
-public extension UIViewControllerRepresentable where Self: Equatable {
     @inline(__always)
     func asAnyComponent() -> AnyComponent {
         AnyComponent(content: self)

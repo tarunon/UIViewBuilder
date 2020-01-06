@@ -25,10 +25,6 @@ public struct AnyComponent: ComponentBase, _Component {
             fatalError()
         }
 
-        func _isEqual(to other: AnyComponent.Base?) -> Bool {
-            fatalError()
-        }
-
         func `as`<Content>(_ componentType: Content.Type) -> Content? {
             (self as? Box<Content>)?.content
         }
@@ -61,32 +57,24 @@ public struct AnyComponent: ComponentBase, _Component {
         override func _length() -> Int {
             content._length()
         }
-
-        @inline(__always)
-        override func _isEqual(to other: Base?) -> Bool {
-            content._isEqual(to: other?.as(Content.self))
-        }
     }
 
     typealias Create = () -> [NativeViewProtocol]
     typealias Traverse<Component> = (Component?) -> [Difference]
     typealias Update = (NativeViewProtocol) -> ()
     typealias Length = () -> Int
-    typealias IsEqualTo<Component> = (Component?) -> Bool
 
     final class ClosureBox<Content: ComponentBase>: Box<Content> {
         var create: Create
         var traverse: Traverse<Base>
         var update: Update
         var length: Length
-        var isEqualTo: IsEqualTo<Base>
 
-        init(create: @escaping Create, traverse: @escaping Traverse<Content>, update: @escaping Update, length: @escaping Length, isEqualTo: @escaping IsEqualTo<Content>, content: Content) {
+        init(create: @escaping Create, traverse: @escaping Traverse<Content>, update: @escaping Update, length: @escaping Length, content: Content) {
             self.create = create
             self.traverse = { traverse($0?.as(Content.self)) }
             self.update = update
             self.length = length
-            self.isEqualTo = { isEqualTo($0?.as(Content.self)) }
             super.init(content: content)
         }
 
@@ -109,12 +97,6 @@ public struct AnyComponent: ComponentBase, _Component {
         override func _length() -> Int {
             length()
         }
-
-
-        @inline(__always)
-        override func _isEqual(to other: Base?) -> Bool {
-            isEqualTo(other)
-        }
     }
 
     let box: Base
@@ -127,8 +109,8 @@ public struct AnyComponent: ComponentBase, _Component {
         self.box = GenericBox(content: content)
     }
 
-    init<Content: ComponentBase>(create: @escaping Create, traverse: @escaping Traverse<Content>, update: @escaping Update, length: @escaping Length, isEqualTo: @escaping IsEqualTo<Content>, content: Content) {
-        self.box = ClosureBox(create: create, traverse: traverse, update: update, length: length, isEqualTo: isEqualTo, content: content)
+    init<Content: ComponentBase>(create: @escaping Create, traverse: @escaping Traverse<Content>, update: @escaping Update, length: @escaping Length, content: Content) {
+        self.box = ClosureBox(create: create, traverse: traverse, update: update, length: length, content: content)
     }
 
     init<Content: NativeRepresentable>(content: Content) where Content.Native: NativeViewProtocol {
@@ -137,18 +119,6 @@ public struct AnyComponent: ComponentBase, _Component {
             traverse: content.traverse,
             update: { content.update(native: $0 as! Content.Native) },
             length: { 1 },
-            isEqualTo: { _ in false },
-            content: content
-        )
-    }
-
-    init<Content: NativeRepresentable & Equatable>(content: Content) where Content.Native: NativeViewProtocol {
-        self.box = ClosureBox(
-            create: { [content.create()] },
-            traverse: content.traverse,
-            update: { content.update(native: $0 as! Content.Native) },
-            length: { 1 },
-            isEqualTo: { content == $0 },
             content: content
         )
     }
@@ -171,10 +141,5 @@ public struct AnyComponent: ComponentBase, _Component {
     @inline(__always)
     func _length() -> Int {
         box._length()
-    }
-
-    @inline(__always)
-    func _isEqual(to other: AnyComponent?) -> Bool {
-        box._isEqual(to: other?.box)
     }
 }

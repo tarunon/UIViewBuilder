@@ -7,7 +7,7 @@
 
 import UIKit
 
-public protocol ComponentBase {
+public protocol ComponentBase: MaybeEquatable {
     func asAnyComponent() -> AnyComponent
 }
 
@@ -31,11 +31,6 @@ extension ComponentBase {
     func length() -> Int {
         asAnyComponent()._length()
     }
-
-    @inline(__always)
-    func isEqual(to other: Self?) -> Bool {
-        asAnyComponent()._isEqual(to: other?.asAnyComponent())
-    }
 }
 
 protocol _Component: ComponentBase {
@@ -43,26 +38,11 @@ protocol _Component: ComponentBase {
     func _difference(with oldValue: Self?) -> [Difference]
     func _update(native: NativeViewProtocol)
     func _length() -> Int
-    func _isEqual(to other: Self?) -> Bool
 }
 
 extension _Component {
     public func asAnyComponent() -> AnyComponent {
         AnyComponent(content: self)
-    }
-}
-
-extension _Component {
-    @inline(__always)
-    func _isEqual(to other: Self?) -> Bool {
-        false
-    }
-}
-
-extension _Component where Self: Equatable {
-    @inline(__always)
-    func _isEqual(to other: Self?) -> Bool {
-        self == other
     }
 }
 
@@ -83,7 +63,6 @@ extension Component {
             },
             update: body.update(native:),
             length: body.length,
-            isEqualTo: { _ in false },
             content: self
         )
     }

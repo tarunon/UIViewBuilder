@@ -36,7 +36,9 @@ public enum ComponentSet {
 
 extension ComponentSet.Empty: Equatable {}
 extension ComponentSet.Pair: Equatable where C0: Equatable, C1: Equatable {}
+extension ComponentSet.Pair: MaybeEquatable where C0: MaybeEquatable, C1: MaybeEquatable {}
 extension ComponentSet.Either: Equatable where C0: Equatable, C1: Equatable {}
+extension ComponentSet.Either: MaybeEquatable where C0: MaybeEquatable, C1: MaybeEquatable {}
 
 extension ComponentSet.Either where C1 == ComponentSet.Empty {
     init(from optional: C0?) {
@@ -101,7 +103,7 @@ extension ComponentSet.Either: ComponentBase, _Component where C0: ComponentBase
 
     @inline(__always)
     func _difference(with oldValue: ComponentSet.Either<C0, C1>?) -> [Difference] {
-        if C0.self is C1.Type && C1.self is C0.Type {
+        if C0.self is C1.Type && C1.self is C0.Type && !(C0.self is AnyComponent.Type) {
             return c0?.difference(with: oldValue?.c0 ?? (oldValue?.c1 as? C0)) ??
                 c1?.difference(with: oldValue?.c1 ?? (oldValue?.c0 as? C1)) ?? []
         }
