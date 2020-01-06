@@ -7,7 +7,7 @@
 
 import UIKit
 
-public protocol NativeRepresentable: ComponentBase, Equatable {
+public protocol NativeRepresentable: ComponentBase {
     associatedtype Native
     func create() -> Native
     func update(native: Native)
@@ -16,7 +16,7 @@ public protocol NativeRepresentable: ComponentBase, Equatable {
 extension NativeRepresentable {
     func traverse(oldValue: Self?) -> [Difference] {
         if let oldValue = oldValue {
-            if self != oldValue {
+            if !self.isEqual(to: oldValue) {
                 return [Difference(index: 0, change: .update(self))]
             }
             return []
@@ -36,10 +36,25 @@ public extension UIViewRepresentable {
     }
 }
 
+public extension UIViewRepresentable where Self: Equatable {
+    @inline(__always)
+    func asAnyComponent() -> AnyComponent {
+        AnyComponent(body: self)
+    }
+}
+
 public protocol UIViewControllerRepresentable: NativeRepresentable where Native: UIViewController {
 }
 
 extension UIViewControllerRepresentable {
+    @inline(__always)
+    func asAnyComponent() -> AnyComponent {
+        AnyComponent(body: self)
+    }
+}
+
+
+public extension UIViewControllerRepresentable where Self: Equatable {
     @inline(__always)
     func asAnyComponent() -> AnyComponent {
         AnyComponent(body: self)

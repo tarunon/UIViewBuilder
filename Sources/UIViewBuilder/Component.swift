@@ -31,6 +31,11 @@ extension ComponentBase {
     func length() -> Int {
         asAnyComponent().length()
     }
+
+    @inline(__always)
+    func isEqual(to other: Self?) -> Bool {
+        asAnyComponent().isEqual(to: other?.asAnyComponent())
+    }
 }
 
 protocol _Component: ComponentBase {
@@ -38,6 +43,7 @@ protocol _Component: ComponentBase {
     func difference(with oldValue: Self?) -> [Difference]
     func update(native: NativeViewProtocol)
     func length() -> Int
+    func isEqual(to other: Self?) -> Bool
 }
 
 extension _Component {
@@ -46,24 +52,38 @@ extension _Component {
     }
 }
 
-public protocol Component: ComponentBase, Equatable {
+extension _Component {
+    @inline(__always)
+    func isEqual(to other: Self?) -> Bool {
+        false
+    }
+}
+
+extension _Component where Self: Equatable {
+    @inline(__always)
+    func isEqual(to other: Self?) -> Bool {
+        self == other
+    }
+}
+
+public protocol Component: ComponentBase {
     associatedtype Body: ComponentBase
     var body: Body { get }
 }
 
 extension Component {
     public func asAnyComponent() -> AnyComponent {
-        let erased = body.asAnyComponent()
         return AnyComponent(
-            create: erased.create,
+            create: body.create,
             traverse: { (oldValue) -> [Difference] in
-                if self != oldValue {
-                    return erased.difference(with: oldValue?.body.asAnyComponent())
+                if !self.isEqual(to: oldValue) {
+                    return self.body.difference(with: oldValue?.body)
                 }
                 return []
             },
-            update: erased.update,
-            length: erased.length,
+            update: body.update(native:),
+            length: body.length,
+            isEqualTo: { _ in false },
             body: self
         )
     }
