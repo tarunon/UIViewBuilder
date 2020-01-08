@@ -140,6 +140,11 @@ public struct ScrollView<Content: ComponentBase>: ComponentBase, _NativeRepresen
         native.axes = axes
         native.content = content
     }
+
+    @inline(__always)
+    func length() -> Int {
+        1
+    }
 }
 
 extension UIScrollView {

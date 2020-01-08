@@ -65,23 +65,25 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
         let oldData = oldValue?.data.map { $0 } ?? []
         let diff = data.map { $0[keyPath: identify] }.difference(from: oldData.map { $0[keyPath: identify] })
 
-        var reducer = diff.insertions.reduce(into: Reducer(fixedData: data.map { $0 }, fixedOldData: oldData)) { (result, difference) in
+        var reducer = diff.removals.reversed().reduce(into: Reducer(fixedData: data.reversed(), fixedOldData: oldData)) { (result, difference) in
+           switch difference {
+           case .insert:
+               break
+           case .remove(let offset, _, _):
+               result.fixedData.insert(nil, at: result.fixedOldData.count - offset - 1)
+           }
+        }
+
+        reducer = diff.insertions.reduce(into: reducer) { (result, difference) in
             switch difference {
             case .insert(let offset, _, _):
                 result.fixedOldData.insert(nil, at: offset)
-            case .remove(let offset, _, _):
-                result.fixedData.insert(nil, at: offset)
+            case .remove:
+                break
             }
         }
 
-        reducer = diff.removals.reduce(into: reducer) { (result, difference) in
-           switch difference {
-           case .insert(let offset, _, _):
-               result.fixedOldData.insert(nil, at: offset)
-           case .remove(let offset, _, _):
-               result.fixedData.insert(nil, at: offset)
-           }
-        }
+        reducer.fixedData = reducer.fixedData.reversed()
 
         return difference(reducer: reducer, oldCreation: oldValue?.creation ?? { _ in fatalError() })
     }
