@@ -8,7 +8,7 @@
 import XCTest
 @testable import UIViewBuilder
 
-class ViewModifierTests: XCTestCase {
+class ComponentModifierTests: XCTestCase {
     func testDifferenceChanges() {
         var components = ForEach(data: 0..<3) {
             Label(text: "\($0)")
