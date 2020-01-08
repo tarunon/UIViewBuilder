@@ -27,10 +27,8 @@ final class NativeStack<Content: ComponentBase, Config: StackConfig>: NativeView
     }
     let cache = NativeViewCache()
     lazy var natives = lazy(type: [NativeViewProtocol].self) {
-        let natives = self.content.create()
-        natives.enumerated().forEach { (index, target) in
-            target.mount(to: self, at: index, parent: parent)
-        }
+        var natives = [NativeViewProtocol]()
+        update(differences: self.content.difference(with: nil), natives: &natives, cache: cache, parent: parent)
         return natives
     }
     lazy var stackView = lazy(type: UIStackView.self) {

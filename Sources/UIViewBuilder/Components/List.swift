@@ -26,10 +26,14 @@ fileprivate extension ComponentBase {
 }
 
 class NativeTableViewCell<Content: ComponentBase>: UITableViewCell, Mountable {
-    weak var parentViewController: UIViewController?
+    weak var parentViewController: _NativeList!
     var contentViewControllers: [UIViewController] = []
-    var oldComponent: Content?
-    var natives: [NativeViewProtocol]!
+    var component: Content! {
+        didSet {
+            update(differences: self.component.difference(with: oldValue), natives: &natives, cache: parentViewController!.cache, parent: parentViewController)
+        }
+    }
+    var natives = [NativeViewProtocol]()
     lazy var stackView = lazy(type: UIStackView.self) {
         let stackView = UIStackView()
         stackView.axis = .horizontal
@@ -74,15 +78,8 @@ class NativeTableViewCell<Content: ComponentBase>: UITableViewCell, Mountable {
     }
 
     func update(content: Content, parent: _NativeList) {
-        if natives == nil {
-            natives = content.create()
-            natives.enumerated().forEach { index, native in
-                native.mount(to: self, at: index, parent: parent)
-            }
-        } else {
-            update(differences: content.difference(with: oldComponent), natives: &natives, cache: parent.cache, parent: parent)
-        }
-        oldComponent = content
+        parentViewController = parent
+        component = content
     }
 
     func mount(view: UIView, at index: Int) {
