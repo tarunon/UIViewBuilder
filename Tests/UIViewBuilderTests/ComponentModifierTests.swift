@@ -17,7 +17,7 @@ class ComponentModifierTests: XCTestCase {
                 let differences = components.difference(with: oldValue)
                 switch differences[0].change {
                 case .stable(let component):
-                    XCTAssertTrue(component is ModifiedContent<Label, EmptyModifier<ForEach<Range<Int>, Label, Int>>>)
+                    XCTAssertTrue(component is ModifiedContent<Label, EmptyModifier<ForEach<Range<Int>, Int, Label>>>)
                 default:
                     XCTFail("wrong diff: \(differences[0])")
                 }

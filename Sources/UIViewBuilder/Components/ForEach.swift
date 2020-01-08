@@ -7,7 +7,7 @@
 
 import UIKit
 
-public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID: Equatable>: ComponentBase, _Component where Data.Element: Equatable, Data.Index == Int {
+public struct ForEach<Data: RandomAccessCollection, ID: Equatable, Component: ComponentBase>: ComponentBase, _Component where Data.Index == Int {
     public var data: Data
 
     var creation: (Data.Element) -> Component
