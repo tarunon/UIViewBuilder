@@ -38,8 +38,6 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
         let components = reducer.fixedData.map { $0.map(creation) }
         let oldComponents = reducer.fixedOldData.map { $0.map(oldCreation) }
 
-        print(zip(reducer.fixedData, reducer.fixedOldData).map { $0 })
-
         return zip(components, oldComponents).reduce(into: (viewIndex: 0, oldViewIndex: 0, differences: [Difference]())) { (result, value) in
             switch value {
             case (.some(let component), .some(let oldComponent)):
