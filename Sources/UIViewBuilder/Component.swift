@@ -55,7 +55,7 @@ extension Component {
     public func asAnyComponent() -> AnyComponent {
         return AnyComponent(
             create: body.create,
-            traverse: { (oldValue) -> [Difference] in
+            difference: { (oldValue) -> [Difference] in
                 if !self.isEqual(to: oldValue) {
                     return self.body.difference(with: oldValue?.body)
                 }

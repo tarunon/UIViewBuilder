@@ -60,19 +60,19 @@ public struct AnyComponent: ComponentBase, _Component {
     }
 
     typealias Create = () -> [NativeViewProtocol]
-    typealias Traverse<Component> = (Component?) -> [Difference]
+    typealias DifferenceFunc<Component> = (Component?) -> [Difference]
     typealias Update = (NativeViewProtocol) -> ()
     typealias Length = () -> Int
 
     final class ClosureBox<Content: ComponentBase>: Box<Content> {
         var create: Create
-        var traverse: Traverse<Base>
+        var difference: DifferenceFunc<Base>
         var update: Update
         var length: Length
 
-        init(create: @escaping Create, traverse: @escaping Traverse<Content>, update: @escaping Update, length: @escaping Length, content: Content) {
+        init(create: @escaping Create, difference: @escaping DifferenceFunc<Content>, update: @escaping Update, length: @escaping Length, content: Content) {
             self.create = create
-            self.traverse = { traverse($0?.as(Content.self)) }
+            self.difference = { difference($0?.as(Content.self)) }
             self.update = update
             self.length = length
             super.init(content: content)
@@ -90,7 +90,7 @@ public struct AnyComponent: ComponentBase, _Component {
 
         @inline(__always)
         override func _difference(with oldValue: AnyComponent.Base?) -> [Difference] {
-            traverse(oldValue)
+            difference(oldValue)
         }
 
         @inline(__always)
@@ -109,14 +109,14 @@ public struct AnyComponent: ComponentBase, _Component {
         self.box = GenericBox(content: content)
     }
 
-    init<Content: ComponentBase>(create: @escaping Create, traverse: @escaping Traverse<Content>, update: @escaping Update, length: @escaping Length, content: Content) {
-        self.box = ClosureBox(create: create, traverse: traverse, update: update, length: length, content: content)
+    init<Content: ComponentBase>(create: @escaping Create, difference: @escaping DifferenceFunc<Content>, update: @escaping Update, length: @escaping Length, content: Content) {
+        self.box = ClosureBox(create: create, difference: difference, update: update, length: length, content: content)
     }
 
     init<Content: NativeRepresentable>(content: Content) where Content.Native: NativeViewProtocol {
         self.box = ClosureBox(
             create: { [content.create()] },
-            traverse: content.traverse,
+            difference: content.difference,
             update: { content.update(native: $0 as! Content.Native) },
             length: { 1 },
             content: content

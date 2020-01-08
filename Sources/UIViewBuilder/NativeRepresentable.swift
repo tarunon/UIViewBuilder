@@ -49,7 +49,7 @@ extension _NativeRepresentable {
 
 extension NativeRepresentable {
     @inline(__always)
-    func traverse(oldValue: Self?) -> [Difference] {
+    func difference(oldValue: Self?) -> [Difference] {
         if let oldValue = oldValue {
             if !self.isEqual(to: oldValue) {
                 return [Difference(index: 0, change: .update(self))]
