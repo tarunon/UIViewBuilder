@@ -180,10 +180,12 @@ public struct List<Body: ComponentBase>: ComponentBase, _Component {
         self.body = creation()
     }
 
+    @inline(__always)
     func create() -> [NativeViewProtocol] {
         [NativeList(body: body)]
     }
 
+    @inline(__always)
     func difference(with oldValue: List?) -> [Difference] {
         if oldValue != nil {
             return [Difference(index: 0, change: .update(self))]
@@ -191,8 +193,14 @@ public struct List<Body: ComponentBase>: ComponentBase, _Component {
         return [Difference(index: 0, change: .insert(self))]
     }
 
+    @inline(__always)
     func update(native: NativeViewProtocol) {
         (native as! NativeList<Body>).body = body
+    }
+
+    @inline(__always)
+    func length() -> Int {
+        1
     }
 }
 
