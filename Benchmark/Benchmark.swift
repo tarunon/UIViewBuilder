@@ -10,7 +10,7 @@ import UIKit
 import UIViewBuilder
 import SwiftUI
 
-struct Label: UIViewBuilder.UIViewRepresentable {
+struct Label: UIViewBuilder.UIViewRepresentable, Equatable {
     var text: String
 
     func create() -> UILabel {
@@ -25,7 +25,7 @@ struct Label: UIViewBuilder.UIViewRepresentable {
     }
 }
 
-struct TextView: UIViewBuilder.UIViewRepresentable {
+struct TextView: UIViewBuilder.UIViewRepresentable, Equatable {
     var text: String
 
     func create() -> UITextView {
@@ -41,7 +41,7 @@ struct TextView: UIViewBuilder.UIViewRepresentable {
     }
 }
 
-struct Button: UIViewBuilder.UIViewRepresentable {
+struct Button: UIViewBuilder.UIViewRepresentable, Equatable {
     var text: String
 
     func create() -> UIButton {
@@ -59,7 +59,7 @@ struct Button: UIViewBuilder.UIViewRepresentable {
 
 class Benchmark: XCTestCase {
     func testBenchmarkComponentStack() {
-        struct Foo: Component {
+        struct Foo: Component, Equatable {
             var array: [Int]
             var flag: Bool
             var title: String
@@ -142,7 +142,7 @@ class Benchmark: XCTestCase {
     }
 
     func testBenchmarkComponentList() {
-         struct Foo: Component {
+         struct Foo: Component, Equatable {
              var array: [Int]
              var flag: Bool
              var title: String
@@ -205,6 +205,14 @@ class Benchmark: XCTestCase {
              }
          }
 
+        print(Text("").modifier(T()))
+
+        struct T: ViewModifier {
+            func body(content: Content) -> some View {
+                content.padding().frame(width: 100, height: 100, alignment: .top)
+            }
+        }
+
          let assets = Array(repeating: [
              Foo(array: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], flag: true, title: "abcde"),
              Foo(array: [6, 7, 8, 9, 10], flag: false, title: "edcba")
@@ -223,5 +231,4 @@ class Benchmark: XCTestCase {
              }
          }
      }
-
 }

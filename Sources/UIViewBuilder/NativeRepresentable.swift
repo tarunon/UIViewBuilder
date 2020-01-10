@@ -7,19 +7,54 @@
 
 import UIKit
 
-public protocol NativeRepresentable: ComponentBase, Equatable {
+public protocol NativeRepresentable: ComponentBase {
     associatedtype Native
     func create() -> Native
     func update(native: Native)
 }
 
-extension NativeRepresentable {
-    func traverse(oldValue: Self?) -> [Difference] {
+protocol _NativeRepresentable: _Component {
+    associatedtype Native: NativeViewProtocol
+    func create() -> Native
+    func update(native: Native)
+}
+
+extension _NativeRepresentable {
+    @inline(__always)
+    func _create() -> [NativeViewProtocol] {
+        [create()]
+    }
+
+    @inline(__always)
+    func _difference(with oldValue: Self?) -> [Difference] {
         if let oldValue = oldValue {
-            if self != oldValue {
+            if !self.isEqual(to: oldValue) {
                 return [Difference(index: 0, change: .update(self))]
             }
-            return []
+            return [Difference(index: 0, change: .stable(self))]
+        }
+        return [Difference(index: 0, change: .insert(self))]
+    }
+
+    @inline(__always)
+    func _update(native: NativeViewProtocol) {
+        update(native: native as! Native)
+    }
+
+    @inline(__always)
+    func _length() -> Int {
+        1
+    }
+}
+
+extension NativeRepresentable {
+    @inline(__always)
+    func difference(oldValue: Self?) -> [Difference] {
+        if let oldValue = oldValue {
+            if !self.isEqual(to: oldValue) {
+                return [Difference(index: 0, change: .update(self))]
+            }
+            return [Difference(index: 0, change: .stable(self))]
         }
         return [Difference(index: 0, change: .insert(self))]
     }
@@ -32,7 +67,7 @@ public protocol UIViewRepresentable: NativeRepresentable where Native: UIView {
 public extension UIViewRepresentable {
     @inline(__always)
     func asAnyComponent() -> AnyComponent {
-        AnyComponent(body: self)
+        AnyComponent(content: self)
     }
 }
 
@@ -42,6 +77,6 @@ public protocol UIViewControllerRepresentable: NativeRepresentable where Native:
 extension UIViewControllerRepresentable {
     @inline(__always)
     func asAnyComponent() -> AnyComponent {
-        AnyComponent(body: self)
+        AnyComponent(content: self)
     }
 }

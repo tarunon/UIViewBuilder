@@ -18,7 +18,7 @@ fileprivate extension HostingController {
 
 class ScrollViewTests: XCTestCase {
     func testScrollViewVertical() {
-        struct TestComponent: Component {
+        struct TestComponent: Component, Equatable {
             var count: Int
             var body: AnyComponent {
                 AnyComponent {
@@ -49,7 +49,7 @@ class ScrollViewTests: XCTestCase {
     }
 
     func testScrollViewHorizontal() {
-        struct TestComponent: Component {
+        struct TestComponent: Component, Equatable {
             var count: Int
             var body: AnyComponent {
                 AnyComponent {
@@ -80,8 +80,8 @@ class ScrollViewTests: XCTestCase {
     }
 
     func testAxisChanges() {
-        struct TestComponent: Component {
-            var axes: AxisSet
+        struct TestComponent: Component, Equatable {
+            var axes: Axis.Set
             var body: AnyComponent {
                 AnyComponent {
                     ScrollView(axes: axes) {
@@ -100,7 +100,7 @@ class ScrollViewTests: XCTestCase {
         }
 
         testComponent(
-            fixtureType: AxisSet.self,
+            fixtureType: Axis.Set.self,
             creation: {
                 TestComponent(axes: $0)
             },

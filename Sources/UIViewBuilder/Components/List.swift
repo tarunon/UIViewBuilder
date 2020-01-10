@@ -20,16 +20,20 @@ fileprivate extension ComponentBase {
     
     func dequeueCell(from parent: _NativeList, indexPath: IndexPath) -> UITableViewCell {
         let cell = parent.tableView.dequeueReusableCell(withIdentifier: reuseIdentifier, for: indexPath) as! Cell
-        cell.render(body: self, parent: parent)
+        cell.update(content: self, parent: parent)
         return cell
     }
 }
 
-class NativeTableViewCell<Body: ComponentBase>: UITableViewCell, Mountable {
-    weak var parentViewController: UIViewController?
+class NativeTableViewCell<Content: ComponentBase>: UITableViewCell, Mountable {
+    weak var parentViewController: _NativeList!
     var contentViewControllers: [UIViewController] = []
-    var oldComponent: Body?
-    var natives: [NativeViewProtocol]!
+    var component: Content! {
+        didSet {
+            update(differences: self.component.difference(with: oldValue), natives: &natives, cache: parentViewController!.cache, parent: parentViewController)
+        }
+    }
+    var natives = [NativeViewProtocol]()
     lazy var stackView = lazy(type: UIStackView.self) {
         let stackView = UIStackView()
         stackView.axis = .horizontal
@@ -73,16 +77,9 @@ class NativeTableViewCell<Body: ComponentBase>: UITableViewCell, Mountable {
         super.prepareForReuse()
     }
 
-    func render(body: Body, parent: _NativeList) {
-        if natives == nil {
-            natives = body.create()
-            natives.enumerated().forEach { index, native in
-                native.mount(to: self, at: index, parent: parent)
-            }
-        } else {
-            update(differences: body.difference(with: oldComponent), natives: &natives, cache: parent.cache, parent: parent)
-        }
-        oldComponent = body
+    func update(content: Content, parent: _NativeList) {
+        parentViewController = parent
+        component = content
     }
 
     func mount(view: UIView, at index: Int) {
@@ -111,7 +108,7 @@ class _NativeList: UITableViewController {
     var registedIdentifiers = Set<String>()
 
     func update(differences: [Difference]) {
-        let (removals, insertions, updations) = differences.sorted().staged()
+        let (removals, insertions, updations, _) = differences.sorted().staged()
         func patch(difference: Difference) {
             switch difference.change {
             case .remove:
@@ -125,6 +122,8 @@ class _NativeList: UITableViewController {
                 type(of: component).registerCellIfNeeded(to: self)
                 components[difference.index] = component
                 tableView.reloadRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
+            case .stable:
+                break
             }
         }
         tableView.reloadData {
@@ -148,15 +147,15 @@ class _NativeList: UITableViewController {
     }
 }
 
-final class NativeList<Body: ComponentBase>: _NativeList {
-    var body: Body {
+final class NativeList<Content: ComponentBase>: _NativeList {
+    var content: Content {
         didSet {
-            update(differences: body.difference(with: oldValue))
+            update(differences: content.difference(with: oldValue))
         }
     }
 
-    init(body: Body) {
-        self.body = body
+    init(content: Content) {
+        self.content = content
         super.init(style: .plain)
     }
 
@@ -168,39 +167,28 @@ final class NativeList<Body: ComponentBase>: _NativeList {
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.beginUpdates()
-        update(differences: body.difference(with: nil))
+        update(differences: content.difference(with: nil))
         tableView.endUpdates()
     }
 }
 
-public struct List<Body: ComponentBase>: ComponentBase, _Component {
-    public var body: Body
+public struct List<Content: ComponentBase>: ComponentBase, _NativeRepresentable {
+    typealias Native = NativeList<Content>
 
-    public init(@ComponentBuilder creation: () -> Body) {
-        self.body = creation()
+    public var content: Content
+
+    public init(@ComponentBuilder creation: () -> Content) {
+        self.content = creation()
     }
 
     @inline(__always)
-    func create() -> [NativeViewProtocol] {
-        [NativeList(body: body)]
+    func create() -> NativeList<Content> {
+        NativeList(content: content)
     }
 
     @inline(__always)
-    func difference(with oldValue: List?) -> [Difference] {
-        if oldValue != nil {
-            return [Difference(index: 0, change: .update(self))]
-        }
-        return [Difference(index: 0, change: .insert(self))]
-    }
-
-    @inline(__always)
-    func update(native: NativeViewProtocol) {
-        (native as! NativeList<Body>).body = body
-    }
-
-    @inline(__always)
-    func length() -> Int {
-        1
+    func update(native: NativeList<Content>) {
+        native.content = content
     }
 }
 

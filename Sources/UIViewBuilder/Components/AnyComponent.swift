@@ -9,137 +9,137 @@ import UIKit
 
 public struct AnyComponent: ComponentBase, _Component {
     class Base: _Component {
-        func create() -> [NativeViewProtocol] {
+        func _create() -> [NativeViewProtocol] {
             fatalError()
         }
 
-        func difference(with oldValue: AnyComponent.Base?) -> [Difference] {
+        func _difference(with oldValue: AnyComponent.Base?) -> [Difference] {
             fatalError()
         }
 
-        func update(native: NativeViewProtocol) {
+        func _update(native: NativeViewProtocol) {
             fatalError()
         }
 
-        func length() -> Int {
+        func _length() -> Int {
             fatalError()
         }
 
-        func `as`<Body>(_ componentType: Body.Type) -> Body? {
-            (self as? Box<Body>)?.body
+        func `as`<Content>(_ componentType: Content.Type) -> Content? {
+            (self as? Box<Content>)?.content
         }
     }
 
-    class Box<Body>: Base {
-        var body: Body
-        init(body: Body) {
-            self.body = body
+    class Box<Content>: Base {
+        var content: Content
+        init(content: Content) {
+            self.content = content
         }
     }
 
-    final class GenericBox<Body: ComponentBase & _Component>: Box<Body> {
+    final class GenericBox<Content: ComponentBase & _Component>: Box<Content> {
         @inline(__always)
-        override func create() -> [NativeViewProtocol] {
-            body.create()
+        override func _create() -> [NativeViewProtocol] {
+            content._create()
         }
 
         @inline(__always)
-        override func difference(with oldValue: AnyComponent.Base?) -> [Difference] {
-            body.difference(with: oldValue?.as(Body.self))
+        override func _difference(with oldValue: AnyComponent.Base?) -> [Difference] {
+            content._difference(with: oldValue?.as(Content.self))
         }
 
         @inline(__always)
-        override func update(native: NativeViewProtocol) {
-            body.update(native: native)
+        override func _update(native: NativeViewProtocol) {
+            content._update(native: native)
         }
 
         @inline(__always)
-        override func length() -> Int {
-            body.length()
+        override func _length() -> Int {
+            content._length()
         }
     }
 
     typealias Create = () -> [NativeViewProtocol]
-    typealias Traverse<Component> = (Component?) -> [Difference]
+    typealias DifferenceFunc<Component> = (Component?) -> [Difference]
     typealias Update = (NativeViewProtocol) -> ()
     typealias Length = () -> Int
 
-    final class ClosureBox<Body: ComponentBase>: Box<Body> {
-        var _create: Create
-        var _traverse: Traverse<Base>
-        var _update: Update
-        var _length: Length
+    final class ClosureBox<Content: ComponentBase>: Box<Content> {
+        var create: Create
+        var difference: DifferenceFunc<Base>
+        var update: Update
+        var length: Length
 
-        init(create: @escaping Create, traverse: @escaping Traverse<Body>, update: @escaping Update, length: @escaping Length, body: Body) {
-            self._create = create
-            self._traverse = { traverse($0?.as(Body.self)) }
-            self._update = update
-            self._length = length
-            super.init(body: body)
+        init(create: @escaping Create, difference: @escaping DifferenceFunc<Content>, update: @escaping Update, length: @escaping Length, content: Content) {
+            self.create = create
+            self.difference = { difference($0?.as(Content.self)) }
+            self.update = update
+            self.length = length
+            super.init(content: content)
         }
 
         @inline(__always)
-        override func create() -> [NativeViewProtocol] {
-            _create()
+        override func _create() -> [NativeViewProtocol] {
+            create()
         }
 
         @inline(__always)
-        override func update(native: NativeViewProtocol) {
-            _update(native)
+        override func _update(native: NativeViewProtocol) {
+            update(native)
         }
 
         @inline(__always)
-        override func difference(with oldValue: AnyComponent.Base?) -> [Difference] {
-            _traverse(oldValue)
+        override func _difference(with oldValue: AnyComponent.Base?) -> [Difference] {
+            difference(oldValue)
         }
 
         @inline(__always)
-        override func length() -> Int {
-            _length()
+        override func _length() -> Int {
+            length()
         }
     }
 
     let box: Base
 
-    public init<Body: ComponentBase>(@ComponentBuilder creation: () -> Body) {
+    public init<Content: ComponentBase>(@ComponentBuilder creation: () -> Content) {
         self = creation().asAnyComponent()
     }
 
-    init<Body: ComponentBase & _Component>(body: Body) {
-        self.box = GenericBox(body: body)
+    init<Content: ComponentBase & _Component>(content: Content) {
+        self.box = GenericBox(content: content)
     }
 
-    init<Body: ComponentBase>(create: @escaping Create, traverse: @escaping Traverse<Body>, update: @escaping Update, length: @escaping Length, body: Body) {
-        self.box = ClosureBox(create: create, traverse: traverse, update: update, length: length, body: body)
+    init<Content: ComponentBase>(create: @escaping Create, difference: @escaping DifferenceFunc<Content>, update: @escaping Update, length: @escaping Length, content: Content) {
+        self.box = ClosureBox(create: create, difference: difference, update: update, length: length, content: content)
     }
 
-    init<Body: NativeRepresentable>(body: Body) where Body.Native: NativeViewProtocol {
+    init<Content: NativeRepresentable>(content: Content) where Content.Native: NativeViewProtocol {
         self.box = ClosureBox(
-            create: { [body.create()] },
-            traverse: body.traverse,
-            update: { body.update(native: $0 as! Body.Native) },
+            create: { [content.create()] },
+            difference: content.difference,
+            update: { content.update(native: $0 as! Content.Native) },
             length: { 1 },
-            body: body
+            content: content
         )
     }
 
     @inline(__always)
-    func create() -> [NativeViewProtocol] {
-        box.create()
+    func _create() -> [NativeViewProtocol] {
+        box._create()
     }
 
     @inline(__always)
-    func difference(with oldValue: AnyComponent?) -> [Difference] {
-        box.difference(with: oldValue?.box)
+    func _difference(with oldValue: AnyComponent?) -> [Difference] {
+        box._difference(with: oldValue?.box)
     }
 
     @inline(__always)
-    func update(native: NativeViewProtocol) {
-        box.update(native: native)
+    func _update(native: NativeViewProtocol) {
+        box._update(native: native)
     }
 
     @inline(__always)
-    func length() -> Int {
-        box.length()
+    func _length() -> Int {
+        box._length()
     }
 }

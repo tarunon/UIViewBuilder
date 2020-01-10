@@ -7,64 +7,63 @@
 
 import UIKit
 
-public protocol ComponentBase {
+public protocol ComponentBase: MaybeEquatable {
     func asAnyComponent() -> AnyComponent
 }
 
 extension ComponentBase {
     @inline(__always)
     func create() -> [NativeViewProtocol] {
-        asAnyComponent().create()
+        asAnyComponent()._create()
     }
 
     @inline(__always)
     func difference(with oldValue: Self?) -> [Difference] {
-        asAnyComponent().difference(with: oldValue?.asAnyComponent())
+        asAnyComponent()._difference(with: oldValue?.asAnyComponent())
     }
 
     @inline(__always)
     func update(native: NativeViewProtocol) {
-        asAnyComponent().update(native: native)
+        asAnyComponent()._update(native: native)
     }
 
     @inline(__always)
     func length() -> Int {
-        asAnyComponent().length()
+        asAnyComponent()._length()
     }
 }
 
 protocol _Component: ComponentBase {
-    func create() -> [NativeViewProtocol]
-    func difference(with oldValue: Self?) -> [Difference]
-    func update(native: NativeViewProtocol)
-    func length() -> Int
+    func _create() -> [NativeViewProtocol]
+    func _difference(with oldValue: Self?) -> [Difference]
+    func _update(native: NativeViewProtocol)
+    func _length() -> Int
 }
 
 extension _Component {
     public func asAnyComponent() -> AnyComponent {
-        AnyComponent(body: self)
+        AnyComponent(content: self)
     }
 }
 
-public protocol Component: ComponentBase, Equatable {
+public protocol Component: ComponentBase {
     associatedtype Body: ComponentBase
     var body: Body { get }
 }
 
 extension Component {
     public func asAnyComponent() -> AnyComponent {
-        let erased = body.asAnyComponent()
         return AnyComponent(
-            create: erased.create,
-            traverse: { (oldValue) -> [Difference] in
-                if self != oldValue {
-                    return erased.difference(with: oldValue?.body.asAnyComponent())
+            create: body.create,
+            difference: { (oldValue) -> [Difference] in
+                if !self.isEqual(to: oldValue) {
+                    return self.body.difference(with: oldValue?.body)
                 }
                 return []
             },
-            update: erased.update,
-            length: erased.length,
-            body: self
+            update: body.update(native:),
+            length: body.length,
+            content: self
         )
     }
 }

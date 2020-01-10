@@ -7,13 +7,13 @@
 
 import UIKit
 
-public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID: Equatable>: ComponentBase, _Component where Data.Element: Equatable, Data.Index == Int {
+public struct ForEach<Data: RandomAccessCollection, ID: Equatable, Component: ComponentBase>: ComponentBase, _Component where Data.Index == Int {
     public var data: Data
 
     var creation: (Data.Element) -> Component
     var identify: KeyPath<Data.Element, ID>
 
-    var body: [Component] {
+    var content: [Component] {
         data.map(creation)
     }
 
@@ -24,8 +24,8 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
     }
 
     @inline(__always)
-    func create() -> [NativeViewProtocol] {
-        body.flatMap { $0.create() }
+    func _create() -> [NativeViewProtocol] {
+        content.flatMap { $0.create() }
     }
 
     private struct Reducer {
@@ -35,10 +35,10 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
 
     @inline(__always)
     private func difference(reducer: Reducer, oldCreation: (Data.Element) -> Component) -> [Difference] {
-        let components = reducer.fixedData.map { $0.map(creation) }
-        let oldComponents = reducer.fixedOldData.map { $0.map(oldCreation) }
+        let content = reducer.fixedData.map { $0.map(creation) }
+        let oldContent = reducer.fixedOldData.map { $0.map(oldCreation) }
 
-        return zip(components, oldComponents).reduce(into: (viewIndex: 0, oldViewIndex: 0, differences: [Difference]())) { (result, value) in
+        return zip(content, oldContent).reduce(into: (viewIndex: 0, oldViewIndex: 0, differences: [Difference]())) { (result, value) in
             switch value {
             case (.some(let component), .some(let oldComponent)):
                 result.differences += component.difference(with: oldComponent).map { $0.with(offset: result.viewIndex, oldOffset: result.oldViewIndex) }
@@ -58,7 +58,7 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
     }
 
     @inline(__always)
-    func difference(with oldValue: ForEach?) -> [Difference] {
+    func _difference(with oldValue: ForEach?) -> [Difference] {
         guard #available(iOS 13, *) else {
             return differenceLegacy(with: oldValue)
         }
@@ -103,13 +103,13 @@ public struct ForEach<Data: RandomAccessCollection, Component: ComponentBase, ID
     }
 
     @inline(__always)
-    func update(native: NativeViewProtocol) {
+    func _update(native: NativeViewProtocol) {
         fatalError()
     }
 
     @inline(__always)
-    func length() -> Int {
-        body.map { $0.length() }.reduce(0, +)
+    func _length() -> Int {
+        content.map { $0.length() }.reduce(0, +)
     }
 }
 

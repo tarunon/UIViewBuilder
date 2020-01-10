@@ -16,7 +16,7 @@ fileprivate extension HostingController {
 
 class ListTests: XCTestCase {
     func testPair() {
-        struct TestComponent: Component {
+        struct TestComponent: Component, Equatable {
             var text0: String
             var text1: String
             var text2: String
@@ -83,7 +83,7 @@ class ListTests: XCTestCase {
     }
 
     func testEither() {
-        struct TestComponent: Component {
+        struct TestComponent: Component, Equatable {
             var condition0: Bool
             var condition1: Bool
             var condition2: Bool
@@ -180,7 +180,7 @@ class ListTests: XCTestCase {
     }
 
     func testForEach() {
-        struct TestComponent: Component {
+        struct TestComponent: Component, Equatable {
             var array0: [String]
             var array1: [String]
             var array2: [String]
@@ -243,7 +243,7 @@ class ListTests: XCTestCase {
         guard #available(iOS 13, *) else {
             return
         }
-        struct TestComponent: Component {
+        struct TestComponent: Component, Equatable {
             struct Identified: Equatable, Identifiable {
                 var id: Int
                 var text: String
@@ -326,7 +326,7 @@ class ListTests: XCTestCase {
     }
 
     func testForEachReuseInEither() {
-        struct TestComponent: Component {
+        struct TestComponent: Component, Equatable {
             var condition0: Bool
             var array0: [String]
 

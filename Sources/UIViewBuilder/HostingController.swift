@@ -48,7 +48,7 @@ public class _HostingController<Component: ComponentBase>: UIViewController, Mou
     var oldComponent: Component?
     public lazy var component = self.creation()
     lazy var _view = View(parent: self)
-    lazy var natives = self.component.create()
+    var natives = [NativeViewProtocol]()
     let cache = NativeViewCache()
 
     public init(@ComponentBuilder creation: @escaping () -> Component) {
@@ -71,9 +71,7 @@ public class _HostingController<Component: ComponentBase>: UIViewController, Mou
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        natives.enumerated().forEach { (index, native) in
-            native.mount(to: self, at: index, parent: self)
-        }
+        update(differences: component.difference(with: nil), natives: &natives, cache: cache, parent: self)
         oldComponent = nil
         if #available(iOS 13.0, *) {
             view.backgroundColor = .systemBackground

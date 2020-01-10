@@ -53,7 +53,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     @objc func shuffle() {
         let timestamp = Date().timeIntervalSince1970
-        vc.component.body.data = Array(emoji.shuffled()[0..<Int.random(in: 0..<emoji.count)])
+        vc.component.content.data = Array(emoji.shuffled()[0..<Int.random(in: 0..<emoji.count)])
         print(String(format: "Reload take %.5f seconds", Date().timeIntervalSince1970 - timestamp))
     }
 

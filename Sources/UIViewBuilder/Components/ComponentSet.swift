@@ -36,7 +36,9 @@ public enum ComponentSet {
 
 extension ComponentSet.Empty: Equatable {}
 extension ComponentSet.Pair: Equatable where C0: Equatable, C1: Equatable {}
+extension ComponentSet.Pair: MaybeEquatable where C0: MaybeEquatable, C1: MaybeEquatable {}
 extension ComponentSet.Either: Equatable where C0: Equatable, C1: Equatable {}
+extension ComponentSet.Either: MaybeEquatable where C0: MaybeEquatable, C1: MaybeEquatable {}
 
 extension ComponentSet.Either where C1 == ComponentSet.Empty {
     init(from optional: C0?) {
@@ -50,58 +52,58 @@ extension ComponentSet.Either where C1 == ComponentSet.Empty {
 
 extension ComponentSet.Empty: ComponentBase, _Component {
     @inline(__always)
-    func create() -> [NativeViewProtocol] {
+    func _create() -> [NativeViewProtocol] {
         []
     }
 
     @inline(__always)
-    func difference(with oldValue: ComponentSet.Empty?) -> [Difference] {
+    func _difference(with oldValue: ComponentSet.Empty?) -> [Difference] {
         []
     }
 
     @inline(__always)
-    func update(native: NativeViewProtocol) {
+    func _update(native: NativeViewProtocol) {
 
     }
 
     @inline(__always)
-    func length() -> Int {
+    func _length() -> Int {
         0
     }
 }
 
 extension ComponentSet.Pair: ComponentBase, _Component where C0: ComponentBase, C1: ComponentBase {
     @inline(__always)
-    func create() -> [NativeViewProtocol] {
+    func _create() -> [NativeViewProtocol] {
         c0.create() + c1.create()
     }
 
     @inline(__always)
-    func difference(with oldValue: ComponentSet.Pair<C0, C1>?) -> [Difference] {
+    func _difference(with oldValue: ComponentSet.Pair<C0, C1>?) -> [Difference] {
         c0.difference(with: oldValue?.c0) +
             c1.difference(with: oldValue?.c1).map { $0.with(offset: c0.length(), oldOffset: oldValue?.c0.length() ?? 0) }
     }
 
     @inline(__always)
-    func update(native: NativeViewProtocol) {
+    func _update(native: NativeViewProtocol) {
         fatalError()
     }
 
     @inline(__always)
-    func length() -> Int {
+    func _length() -> Int {
         c0.length() + c1.length()
     }
 }
 
 extension ComponentSet.Either: ComponentBase, _Component where C0: ComponentBase, C1: ComponentBase {
     @inline(__always)
-    func create() -> [NativeViewProtocol] {
+    func _create() -> [NativeViewProtocol] {
         c0?.create() ?? c1?.create() ?? []
     }
 
     @inline(__always)
-    func difference(with oldValue: ComponentSet.Either<C0, C1>?) -> [Difference] {
-        if C0.self is C1.Type && C1.self is C0.Type {
+    func _difference(with oldValue: ComponentSet.Either<C0, C1>?) -> [Difference] {
+        if C0.self is C1.Type && C1.self is C0.Type && !(C0.self is AnyComponent.Type) {
             return c0?.difference(with: oldValue?.c0 ?? (oldValue?.c1 as? C0)) ??
                 c1?.difference(with: oldValue?.c1 ?? (oldValue?.c0 as? C1)) ?? []
         }
@@ -126,12 +128,12 @@ extension ComponentSet.Either: ComponentBase, _Component where C0: ComponentBase
     }
 
     @inline(__always)
-    func update(native: NativeViewProtocol) {
+    func _update(native: NativeViewProtocol) {
         fatalError()
     }
 
     @inline(__always)
-    func length() -> Int {
+    func _length() -> Int {
         switch self {
         case .c0(let c0): return c0.length()
         case .c1(let c1): return c1.length()
