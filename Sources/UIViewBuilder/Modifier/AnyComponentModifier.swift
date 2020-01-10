@@ -5,12 +5,18 @@
 //  Created by tarunon on 2020/01/07.
 //
 
+import UIKit
+
 public struct AnyComponentModifier: ComponentModifier, _ComponentModifier {
     public typealias Content = AnyComponent
     public typealias Body = AnyComponent
 
     class Base: _ComponentModifier {
-        func _apply(to native: NativeViewProtocol) -> NativeViewProtocol {
+        func _apply(to view: UIView) {
+            fatalError()
+        }
+
+        func _apply(to viewController: UIViewController) {
             fatalError()
         }
 
@@ -26,9 +32,13 @@ public struct AnyComponentModifier: ComponentModifier, _ComponentModifier {
         }
     }
 
-    final class GenericBox<Modifier: _ComponentModifier>: Box<Modifier> {
-        override func _apply(to native: NativeViewProtocol) -> NativeViewProtocol {
-            modifier._apply(to: native)
+    final class GenericBox<Modifier: ComponentModifier & _ComponentModifier>: Box<Modifier> {
+        override func _apply(to view: UIView) {
+            modifier._apply(to: view)
+        }
+
+        override func _apply(to viewController: UIViewController) {
+            modifier._apply(to: viewController)
         }
 
         override func body(content: AnyComponent) -> AnyComponent {
@@ -36,21 +46,27 @@ public struct AnyComponentModifier: ComponentModifier, _ComponentModifier {
         }
     }
 
-    typealias Apply = (NativeViewProtocol) -> NativeViewProtocol
+    typealias Apply<T> = (T) -> ()
     typealias BodyFunc<Content, Body> = (Content) -> Body
 
     final class ClosureBox<Modifier: ComponentModifier>: Box<Modifier> {
-        var apply: Apply
+        var applyToView: Apply<UIView>
+        var applyToViewController: Apply<UIViewController>
         var bodyFunc: BodyFunc<Modifier.Content, Modifier.Body>
 
-        init(apply: @escaping Apply, bodyFunc: @escaping BodyFunc<Modifier.Content, Modifier.Body>, modifier: Modifier) {
-            self.apply = apply
+        init(applyToView: @escaping Apply<UIView>, applyToViewController: @escaping Apply<UIViewController>, bodyFunc: @escaping BodyFunc<Modifier.Content, Modifier.Body>, modifier: Modifier) {
+            self.applyToView = applyToView
+            self.applyToViewController = applyToViewController
             self.bodyFunc = bodyFunc
             super.init(modifier: modifier)
         }
 
-        override func _apply(to native: NativeViewProtocol) -> NativeViewProtocol {
-            apply(native)
+        override func _apply(to view: UIView) {
+            applyToView(view)
+        }
+
+        override func _apply(to viewController: UIViewController) {
+            applyToViewController(viewController)
         }
 
         override func body(content: AnyComponent) -> AnyComponent {
@@ -60,19 +76,27 @@ public struct AnyComponentModifier: ComponentModifier, _ComponentModifier {
 
     var box: Base
 
-    init<Modifier: _ComponentModifier>(modifier: Modifier) {
+    init<Modifier: ComponentModifier & _ComponentModifier>(modifier: Modifier) {
         self.box = GenericBox(modifier: modifier)
     }
 
-    init<Modifier: ComponentModifier>(apply: @escaping Apply, bodyFunc: @escaping BodyFunc<Modifier.Content, Modifier.Body>, modifier: Modifier) {
-        self.box = ClosureBox(apply: apply, bodyFunc: bodyFunc, modifier: modifier)
+    init<Modifier: ComponentModifier>(applyToView: @escaping Apply<UIView>, applyToViewController: @escaping Apply<UIViewController>, bodyFunc: @escaping BodyFunc<Modifier.Content, Modifier.Body>, modifier: Modifier) {
+        self.box = ClosureBox(applyToView: applyToView, applyToViewController: applyToViewController, bodyFunc: bodyFunc, modifier: modifier)
     }
 
-    func _apply(to native: NativeViewProtocol) -> NativeViewProtocol {
-        box._apply(to: native)
+    func _apply(to view: UIView) {
+        box._apply(to: view)
+    }
+
+    func _apply(to viewController: UIViewController) {
+        box._apply(to: viewController)
     }
 
     public func body(content: AnyComponent) -> AnyComponent {
         box.body(content: content)
+    }
+
+    public func asAnyComponentModifier() -> AnyComponentModifier {
+        AnyComponentModifier(modifier: self)
     }
 }

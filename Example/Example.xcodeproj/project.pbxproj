@@ -12,7 +12,7 @@
 		D275FDCF23C1BEA800AB0CDB /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D275FDCE23C1BEA800AB0CDB /* SceneDelegate.swift */; };
 		D275FDD323C1BEAA00AB0CDB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D275FDD223C1BEAA00AB0CDB /* Assets.xcassets */; };
 		D275FDD923C1BEAA00AB0CDB /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D275FDD723C1BEAA00AB0CDB /* LaunchScreen.storyboard */; };
-		D275FDE123C1BFB300AB0CDB /* Label.swift in Sources */ = {isa = PBXBuildFile; fileRef = D275FDE023C1BFB300AB0CDB /* Label.swift */; };
+		D275FDE123C1BFB300AB0CDB /* Assets.swift in Sources */ = {isa = PBXBuildFile; fileRef = D275FDE023C1BFB300AB0CDB /* Assets.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,7 +23,7 @@
 		D275FDD223C1BEAA00AB0CDB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D275FDD823C1BEAA00AB0CDB /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		D275FDDA23C1BEAA00AB0CDB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		D275FDE023C1BFB300AB0CDB /* Label.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Label.swift; sourceTree = "<group>"; };
+		D275FDE023C1BFB300AB0CDB /* Assets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Assets.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,7 +67,7 @@
 			isa = PBXGroup;
 			children = (
 				D275FDCC23C1BEA800AB0CDB /* AppDelegate.swift */,
-				D275FDE023C1BFB300AB0CDB /* Label.swift */,
+				D275FDE023C1BFB300AB0CDB /* Assets.swift */,
 				D275FDCE23C1BEA800AB0CDB /* SceneDelegate.swift */,
 				D275FDD223C1BEAA00AB0CDB /* Assets.xcassets */,
 				D275FDD723C1BEAA00AB0CDB /* LaunchScreen.storyboard */,
@@ -152,7 +152,7 @@
 			files = (
 				D275FDCD23C1BEA800AB0CDB /* AppDelegate.swift in Sources */,
 				D275FDCF23C1BEA800AB0CDB /* SceneDelegate.swift in Sources */,
-				D275FDE123C1BFB300AB0CDB /* Label.swift in Sources */,
+				D275FDE123C1BFB300AB0CDB /* Assets.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

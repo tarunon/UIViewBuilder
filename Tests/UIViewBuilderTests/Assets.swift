@@ -39,18 +39,45 @@ struct TextView: UIViewRepresentable, Equatable {
     }
 }
 
-struct Button: UIViewRepresentable, Equatable {
-    var text: String
+struct Button: Component {
+    private struct _Body: UIViewRepresentable, Equatable {
+        var text: String
 
-    func create() -> UIButton {
-        let native = UIButton()
-        native.translatesAutoresizingMaskIntoConstraints = false
-        native.setTitle(text, for: .normal)
-        return native
+        func create() -> UIButton {
+            let native = UIButton()
+            native.translatesAutoresizingMaskIntoConstraints = false
+            native.setTitle(text, for: .normal)
+            return native
+        }
+
+        func update(native: UIButton) {
+            native.setTitle(text, for: .normal)
+        }
     }
 
-    func update(native: UIButton) {
-        native.setTitle(text, for: .normal)
+    private class _Handler: NSObject, UIViewModifier {
+        var handler: () -> ()
+
+        init(_ handler: @escaping () -> ()) {
+            self.handler = handler
+        }
+
+        func apply(to view: UIView) {
+            (view as! UIButton).addTarget(self, action: #selector(action), for: .touchUpInside)
+        }
+
+        @objc func action() {
+            handler()
+        }
+    }
+
+    var text: String
+    var handler: () -> ()
+
+    var body: AnyComponent {
+        AnyComponent {
+            _Body(text: text).modifier(modifier: _Handler(handler))
+        }
     }
 }
 
