@@ -83,6 +83,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = D275FDDD23C1BEAA00AB0CDB /* Build configuration list for PBXNativeTarget "Example" */;
 			buildPhases = (
+				D2713A3123C990CE00F64ED5 /* Create xcproj */,
 				D275FDC523C1BEA800AB0CDB /* Sources */,
 				D275FDC623C1BEA800AB0CDB /* Frameworks */,
 				D275FDC723C1BEA800AB0CDB /* Resources */,
@@ -144,6 +145,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		D2713A3123C990CE00F64ED5 /* Create xcproj */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Create xcproj";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd ../\nswift package generate-xcodeproj\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		D275FDC523C1BEA800AB0CDB /* Sources */ = {
