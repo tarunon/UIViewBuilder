@@ -1,5 +1,5 @@
 //
-//  Label.swift
+//  Assets.swift
 //  Example
 //
 //  Created by tarunon on 2020/01/05.
