@@ -163,7 +163,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd ../\nswift package generate-xcodeproj\n";
+			shellScript = "cd ../\nif [ ! -e UIViewBuilder.xcodeproj ]; then \n  swift package generate-xcodeproj\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

@@ -85,6 +85,7 @@ class NativeModifiedContent<Content: ComponentBase, Modifier: ComponentModifier>
     }
     weak var viewController: UIViewController!
     weak var target: Mountable!
+    var index: Int!
 
     init(content: Content, modifier: Modifier) {
         self.body = modifier.body(content: content.asAnyComponent())
@@ -94,7 +95,8 @@ class NativeModifiedContent<Content: ComponentBase, Modifier: ComponentModifier>
     func mount(to target: Mountable, at index: Int, parent: UIViewController) {
         self.target = target
         self.viewController = parent
-        natives.enumerated().forEach { $0.element.mount(to: self, at: index + $0.offset, parent: parent) }
+        self.index = index
+        natives.enumerated().forEach { $0.element.mount(to: self, at: $0.offset, parent: parent) }
     }
 
     func unmount(from target: Mountable) {
@@ -104,13 +106,13 @@ class NativeModifiedContent<Content: ComponentBase, Modifier: ComponentModifier>
     func mount(viewController: UIViewController, at index: Int, parent: UIViewController) {
         modifier.asAnyComponentModifier()._apply(to: viewController)
         modifier.asAnyComponentModifier()._apply(to: viewController.view)
-        target.mount(viewController: viewController, at: index, parent: parent)
+        target.mount(viewController: viewController, at: self.index + index, parent: parent)
     }
 
     func mount(view: UIView, at index: Int) {
         modifier.asAnyComponentModifier()._apply(to: viewController)
         modifier.asAnyComponentModifier()._apply(to: view)
-        target.mount(view: view, at: index)
+        target.mount(view: view, at: self.index + index)
     }
 
     func unmount(viewController: UIViewController) {

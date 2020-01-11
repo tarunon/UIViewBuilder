@@ -27,26 +27,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             }
 
             let window = UIWindow(windowScene: windowScene)
-            let vc = HostingController {
-                List {
-                    ForEach(data: emoji) { text in
-                        VStack {
-                            Spacer()
-                            Label(text: text)
-                            Spacer()
-                        }
-                    }
-                }
-            }
-            window.rootViewController = vc
+            window.rootViewController = ExampleViewController(emoji: emoji)
             self.window = window
             window.makeKeyAndVisible()
-
-            Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { (_) in
-                let timestamp = Date().timeIntervalSince1970
-                vc.component.content.data = Array(emoji.shuffled()[0..<Int.random(in: 0..<emoji.count)])
-                print(String(format: "Reload take %.5f seconds", Date().timeIntervalSince1970 - timestamp))
-            }
         }
     }
 
