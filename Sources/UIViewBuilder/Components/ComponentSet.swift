@@ -50,94 +50,61 @@ extension ComponentSet.Either where C1 == ComponentSet.Empty {
     }
 }
 
-extension ComponentSet.Empty: ComponentBase, _Component {
-    @inline(__always)
-    func _create() -> [NativeViewProtocol] {
-        []
-    }
-
+extension ComponentSet.Empty: ComponentBase, NodeComponent {
     @inline(__always)
     func _difference(with oldValue: ComponentSet.Empty?) -> Differences {
         .empty
     }
 
     @inline(__always)
-    func _update(native: NativeViewProtocol) {
-
-    }
-
-    @inline(__always)
-    func _length() -> Int {
-        0
+    func _destroy() -> Differences {
+        .empty
     }
 }
 
-extension ComponentSet.Pair: ComponentBase, _Component where C0: ComponentBase, C1: ComponentBase {
-    @inline(__always)
-    func _create() -> [NativeViewProtocol] {
-        c0.create() + c1.create()
-    }
-
+extension ComponentSet.Pair: ComponentBase, NodeComponent where C0: ComponentBase, C1: ComponentBase {
     @inline(__always)
     func _difference(with oldValue: ComponentSet.Pair<C0, C1>?) -> Differences {
-        c0.difference(with: oldValue?.c0) +
-            c1.difference(with: oldValue?.c1)
-                .with(offset: c0.length(), oldOffset: oldValue?.c0.length() ?? 0)
+        c0.difference(with: oldValue?.c0) + c1.difference(with: oldValue?.c1)
     }
 
     @inline(__always)
-    func _update(native: NativeViewProtocol) {
-        fatalError()
-    }
-
-    @inline(__always)
-    func _length() -> Int {
-        c0.length() + c1.length()
+    func _destroy() -> Differences {
+        c0.destroy() + c1.destroy()
     }
 }
 
-extension ComponentSet.Either: ComponentBase, _Component where C0: ComponentBase, C1: ComponentBase {
-    @inline(__always)
-    func _create() -> [NativeViewProtocol] {
-        c0?.create() ?? c1?.create() ?? []
-    }
-
+extension ComponentSet.Either: ComponentBase, NodeComponent where C0: ComponentBase, C1: ComponentBase {
     @inline(__always)
     func _difference(with oldValue: ComponentSet.Either<C0, C1>?) -> Differences {
         if C0.self is C1.Type && C1.self is C0.Type && !(C0.self is AnyComponent.Type) {
             return (c0?.difference(with: oldValue?.c0 ?? (oldValue?.c1 as? C0)) ??
                 c1?.difference(with: oldValue?.c1 ?? (oldValue?.c0 as? C1)))!
         }
-        var result = Differences.empty
+        var differences = Differences.empty
         switch (self, oldValue) {
         case (.c0(let c0), .c0(let oldValue)):
-            result = result + c0.difference(with: oldValue)
+            differences = differences + c0.difference(with: oldValue)
         case (.c1(let c1), .c1(let oldValue)):
-            result = result + c1.difference(with: oldValue)
+            differences = differences + c1.difference(with: oldValue)
         case (.c0(let c0), .c1(let oldValue)):
-            result = result + Differences.removeRange(range: 0..<oldValue.length(), component: oldValue)
+            differences = differences + oldValue.destroy()
             fallthrough
         case (.c0(let c0), .none):
-            result = result + c0.difference(with: nil)
+            differences = differences + c0.difference(with: nil)
         case (.c1(let c1), .c0(let oldValue)):
-            result = result + Differences.removeRange(range: 0..<oldValue.length(), component: oldValue)
+            differences = differences + oldValue.destroy()
             fallthrough
         case (.c1(let c1), .none):
-            result = result + c1.difference(with: nil)
+            differences = differences + c1.difference(with: nil)
         }
-        return result
+        return differences
     }
 
-    @inline(__always)
-    func _update(native: NativeViewProtocol) {
-        fatalError()
-    }
-
-    @inline(__always)
-    func _length() -> Int {
+    func _destroy() -> Differences {
         switch self {
-        case .c0(let c0): return c0.length()
-        case .c1(let c1): return c1.length()
+        case .c0(let c0): return c0.destroy()
+        case .c1(let c1): return c1.destroy()
         }
     }
 }

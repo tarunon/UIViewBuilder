@@ -13,34 +13,22 @@ public protocol ComponentBase: MaybeEquatable {
 
 extension ComponentBase {
     @inline(__always)
-    func create() -> [NativeViewProtocol] {
-        asAnyComponent()._create()
-    }
-
-    @inline(__always)
     func difference(with oldValue: Self?) -> Differences {
         asAnyComponent()._difference(with: oldValue?.asAnyComponent())
     }
 
     @inline(__always)
-    func update(native: NativeViewProtocol) {
-        asAnyComponent()._update(native: native)
-    }
-
-    @inline(__always)
-    func length() -> Int {
-        asAnyComponent()._length()
+    func destroy() -> Differences {
+        asAnyComponent()._destroy()
     }
 }
 
-protocol _Component: ComponentBase {
-    func _create() -> [NativeViewProtocol]
+protocol NodeComponent: ComponentBase {
     func _difference(with oldValue: Self?) -> Differences
-    func _update(native: NativeViewProtocol)
-    func _length() -> Int
+    func _destroy() -> Differences
 }
 
-extension _Component {
+extension NodeComponent {
     public func asAnyComponent() -> AnyComponent {
         AnyComponent(content: self)
     }
@@ -53,16 +41,14 @@ public protocol Component: ComponentBase {
 
 extension Component {
     public func asAnyComponent() -> AnyComponent {
+        let erased = body.asAnyComponent()
         return AnyComponent(
-            create: body.create,
-            difference: { (oldValue) in
-                if !self.isEqual(to: oldValue) {
-                    return self.body.difference(with: oldValue?.body)
-                }
-                return .empty
+            create: erased._create,
+            difference: { oldValue in
+                erased._difference(with: oldValue?.body.asAnyComponent())
             },
-            update: body.update(native:),
-            length: body.length,
+            update: erased._update(native:),
+            destroy: erased._destroy,
             content: self
         )
     }

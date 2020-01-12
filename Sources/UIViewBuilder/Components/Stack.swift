@@ -22,13 +22,13 @@ struct VStackConfig: StackConfig {
 final class NativeStack<Content: ComponentBase, Config: StackConfig>: NativeViewProtocol, Mountable {
     var content: Content {
         didSet {
-            update(differences: content.difference(with: oldValue), natives: &natives, cache: cache, parent: parent)
+            update(graph: content.difference(with: oldValue), natives: &natives, cache: cache, parent: parent)
         }
     }
     let cache = NativeViewCache()
     lazy var natives = lazy(type: [NativeViewProtocol].self) {
         var natives = [NativeViewProtocol]()
-        update(differences: self.content.difference(with: nil), natives: &natives, cache: cache, parent: parent)
+        update(graph: self.content.difference(with: nil), natives: &natives, cache: cache, parent: parent)
         return natives
     }
     lazy var stackView = lazy(type: UIStackView.self) {
@@ -76,7 +76,7 @@ final class NativeStack<Content: ComponentBase, Config: StackConfig>: NativeView
     }
 }
 
-protocol StackComponent: _NativeRepresentable where Native == NativeStack<Content, Config> {
+protocol StackComponent: NativeRepresentable where Native == NativeStack<Content, Config> {
     associatedtype Config: StackConfig
     associatedtype Content: ComponentBase
     var content: Content { get }

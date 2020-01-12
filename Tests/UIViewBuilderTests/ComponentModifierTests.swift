@@ -15,12 +15,12 @@ class ComponentModifierTests: XCTestCase {
                 Label(text: "\($0)")
             }.backgroundColor(.red) {
                 didSet {
-                    let differences = components.difference(with: oldValue)
-                    switch differences.sorted()[0].change {
-                    case .stable(let component):
-                        XCTAssertTrue(component is ModifiedContent<Label, BackgroundColorModifier>)
+                    let difference = components.difference(with: oldValue).differences[0]
+                    switch difference.change {
+                    case .stable:
+                        XCTAssertTrue(difference.component is ModifiedContent<Label, BackgroundColorModifier>)
                     default:
-                        XCTFail("wrong diff: \(differences.sorted()[0])")
+                        XCTFail("wrong diff: \(difference)")
                     }
                 }
             }
@@ -31,12 +31,12 @@ class ComponentModifierTests: XCTestCase {
                 Label(text: "\($0)")
             }.backgroundColor(.red) {
                 didSet {
-                    let differences = components.difference(with: oldValue)
-                    switch differences.sorted()[0].change {
-                    case .update(let component):
-                        XCTAssertTrue(component is ModifiedContent<Label, BackgroundColorModifier>)
+                    let difference = components.difference(with: oldValue).differences[0]
+                    switch difference.change {
+                    case .update:
+                        XCTAssertTrue(difference.component is ModifiedContent<Label, BackgroundColorModifier>)
                     default:
-                        XCTFail("wrong diff: \(differences.sorted()[0])")
+                        XCTFail("wrong diff: \(difference)")
                     }
                 }
             }
@@ -81,12 +81,12 @@ class ComponentModifierTests: XCTestCase {
                 Label(text: "\($0)")
             }.modifier(modifier: MyModifier(backgroundColor: .red, foregroundColor: .yellow)) {
                 didSet {
-                    let differences = components.difference(with: oldValue)
-                    switch differences.sorted()[0].change {
-                    case .stable(let component):
-                        XCTAssertTrue(component is ModifiedContent<Label, MyModifier>)
+                    let difference = components.difference(with: oldValue).differences[0]
+                    switch difference.change {
+                    case .stable:
+                        XCTAssertTrue(difference.component is ModifiedContent<Label, MyModifier>)
                     default:
-                        XCTFail("wrong diff: \(differences.sorted()[0])")
+                        XCTFail("wrong diff: \(difference)")
                     }
                 }
             }

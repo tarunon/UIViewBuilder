@@ -37,7 +37,7 @@ public class _HostingController<Component: ComponentBase>: UIViewController, Mou
 
         override func layoutSubviews() {
             if let parent = parent, parent.oldComponent != nil {
-                parent.update(differences: parent.component.difference(with: parent.oldComponent), natives: &parent.natives, cache: parent.cache, parent: parent)
+                parent.update(graph: parent.component.difference(with: parent.oldComponent), natives: &parent.natives, cache: parent.cache, parent: parent)
                 parent.oldComponent = nil
             }
             super.layoutSubviews()
@@ -71,7 +71,7 @@ public class _HostingController<Component: ComponentBase>: UIViewController, Mou
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        update(differences: component.difference(with: nil), natives: &natives, cache: cache, parent: self)
+        update(graph: component.difference(with: nil), natives: &natives, cache: cache, parent: self)
         oldComponent = nil
         if #available(iOS 13.0, *) {
             view.backgroundColor = .systemBackground

@@ -45,7 +45,7 @@ extension _ComponentModifier where Self: ComponentModifier {
 class NativeModifiedContent<Content: ComponentBase, Modifier: ComponentModifier>: NativeViewProtocol, Mountable {
     var body: Modifier.Body {
         didSet {
-            update(differences: body.difference(with: oldValue), natives: &natives, cache: nil, parent: viewController)
+            update(graph: body.difference(with: oldValue), natives: &natives, cache: nil, parent: viewController)
         }
     }
 
@@ -58,7 +58,7 @@ class NativeModifiedContent<Content: ComponentBase, Modifier: ComponentModifier>
     }
     lazy var natives = lazy(type: [NativeViewProtocol].self) {
         var natives = [NativeViewProtocol]()
-        update(differences: body.difference(with: nil), natives: &natives, cache: nil, parent: self.viewController)
+        update(graph: body.difference(with: nil), natives: &natives, cache: nil, parent: self.viewController)
         return natives
     }
     weak var viewController: UIViewController!
@@ -102,7 +102,7 @@ class NativeModifiedContent<Content: ComponentBase, Modifier: ComponentModifier>
     }
 }
 
-public struct ModifiedContent<Content: ComponentBase, Modifier: ComponentModifier>: ComponentBase, _NativeRepresentable {
+public struct ModifiedContent<Content: ComponentBase, Modifier: ComponentModifier>: ComponentBase, NodeComponent, NativeRepresentable {
     typealias Native = NativeModifiedContent<Content, Modifier>
 
     public var content: Content
@@ -125,12 +125,21 @@ public struct ModifiedContent<Content: ComponentBase, Modifier: ComponentModifie
     }
 
     @inline(__always)
-    func _length() -> Int {
-        content.length()
-    }
-
-    @inline(__always)
     func _difference(with oldValue: Self?) -> Differences {
         content.difference(with: oldValue?.content).with(modifier: modifier, changed: !self.modifier.isEqual(to: oldValue?.modifier))
+    }
+
+    func _destroy() -> Differences {
+        content.destroy().with(modifier: modifier, changed: false)
+    }
+
+    public func asAnyComponent() -> AnyComponent {
+        AnyComponent(
+            create: self.create,
+            difference: self._difference,
+            update: self.update,
+            destroy: self._destroy,
+            content: self
+        )
     }
 }

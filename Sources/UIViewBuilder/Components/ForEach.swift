@@ -7,7 +7,7 @@
 
 import UIKit
 
-public struct ForEach<Data: RandomAccessCollection, ID: Equatable, Component: ComponentBase>: ComponentBase, _Component where Data.Index == Int {
+public struct ForEach<Data: RandomAccessCollection, ID: Equatable, Component: ComponentBase>: ComponentBase, NodeComponent where Data.Index == Int {
     public var data: Data
 
     var creation: (Data.Element) -> Component
@@ -23,44 +23,34 @@ public struct ForEach<Data: RandomAccessCollection, ID: Equatable, Component: Co
         self.identify = identify
     }
 
-    @inline(__always)
-    func _create() -> [NativeViewProtocol] {
-        content.flatMap { $0.create() }
-    }
-
     private struct Reducer {
         var fixedData: [Data.Element?]
         var fixedOldData: [Data.Element?]
     }
 
     @inline(__always)
-    private func difference(reducer: Reducer, oldCreation: (Data.Element) -> Component) -> Differences {
+    private func make(reducer: Reducer, oldCreation: (Data.Element) -> Component) -> Differences {
         let content = reducer.fixedData.map { $0.map(creation) }
         let oldContent = reducer.fixedOldData.map { $0.map(oldCreation) }
 
-        return zip(content, oldContent).reduce(into: (viewIndex: 0, oldViewIndex: 0, differences: Differences.empty)) { (result, value) in
+        return zip(content, oldContent).reduce(into: Differences.empty) { (result, value) in
             switch value {
             case (.some(let component), .some(let oldComponent)):
-                result.differences = result.differences + component.difference(with: oldComponent).with(offset: result.viewIndex, oldOffset: result.oldViewIndex)
-                result.viewIndex += component.length()
-                result.oldViewIndex += oldComponent.length()
+                result = result + component.difference(with: oldComponent)
             case (.some(let component), .none):
-                result.differences = result.differences + component.difference(with: nil).with(offset: result.viewIndex, oldOffset: result.oldViewIndex)
-                result.viewIndex += component.length()
+                result = result + component.difference(with: nil)
             case (.none, .some(let oldComponent)):
-                let length = oldComponent.length()
-                result.differences = result.differences + Differences.removeRange(range: result.oldViewIndex..<result.oldViewIndex + length, component: oldComponent)
-                result.oldViewIndex += length
+                result = result + oldComponent.destroy()
             case (.none, .none):
                 break
             }
-        }.differences
+        }
     }
 
     @inline(__always)
     func _difference(with oldValue: ForEach?) -> Differences {
         guard #available(iOS 13, *) else {
-            return differenceLegacy(with: oldValue)
+            return makeLegacy(with: oldValue)
         }
         let oldData = oldValue?.data.map { $0 } ?? []
         let diff = data.map { $0[keyPath: identify] }.difference(from: oldData.map { $0[keyPath: identify] })
@@ -85,11 +75,11 @@ public struct ForEach<Data: RandomAccessCollection, ID: Equatable, Component: Co
 
         reducer.fixedData = reducer.fixedData.reversed()
 
-        return difference(reducer: reducer, oldCreation: oldValue?.creation ?? { _ in fatalError() })
+        return make(reducer: reducer, oldCreation: oldValue?.creation ?? { _ in fatalError() })
     }
 
     @inline(__always)
-    func differenceLegacy(with oldValue: ForEach?) -> Differences {
+    func makeLegacy(with oldValue: ForEach?) -> Differences {
         let oldData = oldValue?.data.map { $0 } ?? []
         let reducer: Reducer
         if data.count == oldData.count {
@@ -99,17 +89,14 @@ public struct ForEach<Data: RandomAccessCollection, ID: Equatable, Component: Co
         } else {
             reducer = Reducer(fixedData: data.map { $0 }, fixedOldData: oldData + Array(repeating: Data.Element?.none, count: data.count - oldData.count))
         }
-        return difference(reducer: reducer, oldCreation: oldValue?.creation ?? { _ in fatalError() })
+        return make(reducer: reducer, oldCreation: oldValue?.creation ?? { _ in fatalError() })
     }
 
     @inline(__always)
-    func _update(native: NativeViewProtocol) {
-        fatalError()
-    }
-
-    @inline(__always)
-    func _length() -> Int {
-        content.map { $0.length() }.reduce(0, +)
+    func _destroy() -> Differences {
+        content.reduce(into: Differences.empty) {
+            $0 = $0 + $1.destroy()
+        }
     }
 }
 

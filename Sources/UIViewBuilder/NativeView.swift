@@ -10,7 +10,7 @@ import UIKit
 class NativeViewCache {
     var reuseQueue: [String: [NativeViewProtocol]] = [:]
 
-    func dequeue(component: ComponentBase) -> NativeViewProtocol? {
+    func dequeue(component: RepresentableBase) -> NativeViewProtocol? {
         guard let native = reuseQueue[component.reuseIdentifier]?.popLast() else {
             return nil
         }

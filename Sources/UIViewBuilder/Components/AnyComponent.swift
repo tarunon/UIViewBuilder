@@ -7,9 +7,9 @@
 
 import UIKit
 
-public struct AnyComponent: ComponentBase, _Component {
-    class Base: _Component {
-        func _create() -> [NativeViewProtocol] {
+public struct AnyComponent: ComponentBase {
+    class Base {
+        func _create() -> NativeViewProtocol {
             fatalError()
         }
 
@@ -21,7 +21,7 @@ public struct AnyComponent: ComponentBase, _Component {
             fatalError()
         }
 
-        func _length() -> Int {
+        func _destroy() -> Differences {
             fatalError()
         }
 
@@ -37,15 +37,22 @@ public struct AnyComponent: ComponentBase, _Component {
         }
     }
 
-    final class GenericBox<Content: ComponentBase & _Component>: Box<Content> {
-        @inline(__always)
-        override func _create() -> [NativeViewProtocol] {
-            content._create()
-        }
-
+    final class NodeBox<Content: NodeComponent>: Box<Content> {
         @inline(__always)
         override func _difference(with oldValue: AnyComponent.Base?) -> Differences {
             content._difference(with: oldValue?.as(Content.self))
+        }
+
+        @inline(__always)
+        override func _destroy() -> Differences {
+            content._destroy()
+        }
+    }
+
+    final class RepresentableBox<Content: RepresentableBase>: Box<Content> {
+        @inline(__always)
+        override func _create() -> NativeViewProtocol {
+            content.create()
         }
 
         @inline(__always)
@@ -54,38 +61,49 @@ public struct AnyComponent: ComponentBase, _Component {
         }
 
         @inline(__always)
-        override func _length() -> Int {
-            content._length()
+        override func _difference(with oldValue: AnyComponent.Base?) -> Differences {
+            if let oldValue = oldValue?.as(Content.self) {
+                if !content.isEqual(to: oldValue) {
+                    return .update(component: content)
+                }
+                return .stable(component: content)
+            }
+            return .insert(component: content)
+        }
+
+        @inline(__always)
+        override func _destroy() -> Differences {
+            .remove(component: content)
         }
     }
 
-    typealias Create = () -> [NativeViewProtocol]
-    typealias DifferenceFunc<Component> = (Component?) -> Differences
-    typealias Update = (NativeViewProtocol) -> ()
-    typealias Length = () -> Int
+    typealias Create<T> = () -> T
+    typealias Difference<Component> = (Component?) -> Differences
+    typealias Update<T> = (T) -> ()
+    typealias Destroy = () -> Differences
 
-    final class ClosureBox<Content: ComponentBase>: Box<Content> {
-        var create: Create
-        var difference: DifferenceFunc<Base>
-        var update: Update
-        var length: Length
+    final class ClosureBox<Content: ComponentBase, Native>: Box<Content> {
+        var create: Create<Native>
+        var difference: Difference<Base>
+        var update: Update<Native>
+        var destroy: Destroy
 
-        init(create: @escaping Create, difference: @escaping DifferenceFunc<Content>, update: @escaping Update, length: @escaping Length, content: Content) {
+        init(create: @escaping Create<Native>, difference: @escaping Difference<Content>, update: @escaping Update<Native>, destroy: @escaping Destroy, content: Content) {
             self.create = create
             self.difference = { difference($0?.as(Content.self)) }
             self.update = update
-            self.length = length
+            self.destroy = destroy
             super.init(content: content)
         }
 
         @inline(__always)
-        override func _create() -> [NativeViewProtocol] {
-            create()
+        override func _create() -> NativeViewProtocol {
+            create() as! NativeViewProtocol
         }
 
         @inline(__always)
         override func _update(native: NativeViewProtocol) {
-            update(native)
+            update(native as! Native)
         }
 
         @inline(__always)
@@ -94,8 +112,8 @@ public struct AnyComponent: ComponentBase, _Component {
         }
 
         @inline(__always)
-        override func _length() -> Int {
-            length()
+        override func _destroy() -> Differences {
+            destroy()
         }
     }
 
@@ -105,32 +123,21 @@ public struct AnyComponent: ComponentBase, _Component {
         self = creation().asAnyComponent()
     }
 
-    init<Content: ComponentBase & _Component>(content: Content) {
-        self.box = GenericBox(content: content)
+    init<Content: NodeComponent>(content: Content) {
+        self.box = NodeBox(content: content)
     }
 
-    init<Content: ComponentBase>(create: @escaping Create, difference: @escaping DifferenceFunc<Content>, update: @escaping Update, length: @escaping Length, content: Content) {
-        self.box = ClosureBox(create: create, difference: difference, update: update, length: length, content: content)
+    init<Content: RepresentableBase>(content: Content) {
+        self.box = RepresentableBox(content: content)
     }
 
-    init<Content: NativeRepresentable>(content: Content) where Content.Native: NativeViewProtocol {
-        self.box = ClosureBox(
-            create: { [content.create()] },
-            difference: content.difference,
-            update: { content.update(native: $0 as! Content.Native) },
-            length: { 1 },
-            content: content
-        )
+    init<Content: ComponentBase, Native>(create: @escaping Create<Native>, difference: @escaping Difference<Content>, update: @escaping Update<Native>, destroy: @escaping Destroy, content: Content) {
+        self.box = ClosureBox(create: create, difference: difference, update: update, destroy: destroy, content: content)
     }
 
     @inline(__always)
-    func _create() -> [NativeViewProtocol] {
+    func _create() -> NativeViewProtocol {
         box._create()
-    }
-
-    @inline(__always)
-    func _difference(with oldValue: AnyComponent?) -> Differences {
-        box._difference(with: oldValue?.box)
     }
 
     @inline(__always)
@@ -139,7 +146,23 @@ public struct AnyComponent: ComponentBase, _Component {
     }
 
     @inline(__always)
-    func _length() -> Int {
-        box._length()
+    func _difference(with oldValue: AnyComponent?) -> Differences {
+        box._difference(with: oldValue?.box)
+    }
+
+    @inline(__always)
+    func _destroy() -> Differences {
+        box._destroy()
+    }
+
+    @inline(__always)
+    public func asAnyComponent() -> AnyComponent {
+        AnyComponent(
+            create: self._create,
+            difference: self._difference(with:),
+            update: self._update(native:),
+            destroy: self._destroy,
+            content: self
+        )
     }
 }

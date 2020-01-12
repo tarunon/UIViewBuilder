@@ -18,12 +18,16 @@ final class NativeScrollView<Content: ComponentBase>: NativeViewProtocol, Mounta
     }
     var content: Content{
         didSet {
-            update(differences: content.difference(with: oldValue), natives: &natives, cache: cache, parent: parent)
+            update(graph: content.difference(with: oldValue), natives: &natives, cache: cache, parent: parent)
         }
     }
 
     let cache = NativeViewCache()
-    lazy var natives = self.content.create()
+    lazy var natives = lazy(type: [NativeViewProtocol].self) {
+        var natives = [NativeViewProtocol]()
+        update(graph: self.content.difference(with: nil), natives: &natives, cache: cache, parent: parent)
+        return natives
+    }
     lazy var scrollView = lazy(type: UIScrollView.self) {
         let scrollView = UIScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -120,7 +124,7 @@ final class NativeScrollView<Content: ComponentBase>: NativeViewProtocol, Mounta
     }
 }
 
-public struct ScrollView<Content: ComponentBase>: ComponentBase, _NativeRepresentable {
+public struct ScrollView<Content: ComponentBase>: ComponentBase, RepresentableBase, NativeRepresentable {
     typealias Native = NativeScrollView<Content>
     public var axes: Axis.Set
     public var content: Content
@@ -139,11 +143,6 @@ public struct ScrollView<Content: ComponentBase>: ComponentBase, _NativeRepresen
     func update(native: NativeScrollView<Content>) {
         native.axes = axes
         native.content = content
-    }
-
-    @inline(__always)
-    func length() -> Int {
-        1
     }
 }
 

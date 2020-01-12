@@ -205,14 +205,6 @@ class Benchmark: XCTestCase {
              }
          }
 
-        print(Text("").modifier(T()))
-
-        struct T: ViewModifier {
-            func body(content: Content) -> some View {
-                content.padding().frame(width: 100, height: 100, alignment: .top)
-            }
-        }
-
          let assets = Array(repeating: [
              Foo(array: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], flag: true, title: "abcde"),
              Foo(array: [6, 7, 8, 9, 10], flag: false, title: "edcba")

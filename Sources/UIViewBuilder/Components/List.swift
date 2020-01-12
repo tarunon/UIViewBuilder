@@ -30,7 +30,7 @@ class NativeTableViewCell<Content: ComponentBase>: UITableViewCell, Mountable {
     var contentViewControllers: [UIViewController] = []
     var component: Content! {
         didSet {
-            update(differences: self.component.difference(with: oldValue), natives: &natives, cache: parentViewController!.cache, parent: parentViewController)
+            update(graph: self.component.difference(with: oldValue), natives: &natives, cache: parentViewController!.cache, parent: parentViewController)
         }
     }
     var natives = [NativeViewProtocol]()
@@ -107,30 +107,27 @@ class _NativeList: UITableViewController {
     var cache = NativeViewCache()
     var registedIdentifiers = Set<String>()
 
-    func update(differences: Differences) {
-        let (removals, insertions, updations, _) = differences.staged()
-        func patch(difference: Difference) {
-            switch difference.change {
-            case .remove:
-                components.remove(at: difference.index)
-                tableView.deleteRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
-            case .insert(let component):
-                type(of: component).registerCellIfNeeded(to: self)
-                components.insert(component, at: difference.index)
-                tableView.insertRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
-            case .update(let component):
-                type(of: component).registerCellIfNeeded(to: self)
-                components[difference.index] = component
-                tableView.reloadRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
-            case .stable:
-                break
+    func update(graph: Differences) {
+        graph.listen { differences in
+            tableView.reloadData {
+                differences.forEach { difference in
+                    switch difference.change {
+                    case .remove:
+                        components.remove(at: difference.index)
+                        tableView.deleteRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
+                    case .insert:
+                        type(of: difference.component).registerCellIfNeeded(to: self)
+                        components.insert(difference.component, at: difference.index)
+                        tableView.insertRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
+                    case .update:
+                        type(of: difference.component).registerCellIfNeeded(to: self)
+                        components[difference.index] = difference.component
+                        tableView.reloadRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
+                    case .stable:
+                        break
+                    }
+                }
             }
-        }
-        tableView.reloadData {
-            (removals + insertions).forEach(patch)
-        }
-        tableView.reloadData {
-            updations.forEach(patch)
         }
     }
 
@@ -150,7 +147,7 @@ class _NativeList: UITableViewController {
 final class NativeList<Content: ComponentBase>: _NativeList {
     var content: Content {
         didSet {
-            update(differences: content.difference(with: oldValue))
+            update(graph: content.difference(with: oldValue))
         }
     }
 
@@ -167,12 +164,12 @@ final class NativeList<Content: ComponentBase>: _NativeList {
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.beginUpdates()
-        update(differences: content.difference(with: nil))
+        update(graph: content.difference(with: nil))
         tableView.endUpdates()
     }
 }
 
-public struct List<Content: ComponentBase>: ComponentBase, _NativeRepresentable {
+public struct List<Content: ComponentBase>: ComponentBase, NativeRepresentable {
     typealias Native = NativeList<Content>
 
     public var content: Content
