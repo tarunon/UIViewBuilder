@@ -57,8 +57,8 @@ extension ComponentSet.Empty: ComponentBase, _Component {
     }
 
     @inline(__always)
-    func _difference(with oldValue: ComponentSet.Empty?) -> [Difference] {
-        []
+    func _difference(with oldValue: ComponentSet.Empty?) -> Differences {
+        .empty
     }
 
     @inline(__always)
@@ -79,9 +79,10 @@ extension ComponentSet.Pair: ComponentBase, _Component where C0: ComponentBase, 
     }
 
     @inline(__always)
-    func _difference(with oldValue: ComponentSet.Pair<C0, C1>?) -> [Difference] {
+    func _difference(with oldValue: ComponentSet.Pair<C0, C1>?) -> Differences {
         c0.difference(with: oldValue?.c0) +
-            c1.difference(with: oldValue?.c1).map { $0.with(offset: c0.length(), oldOffset: oldValue?.c0.length() ?? 0) }
+            c1.difference(with: oldValue?.c1)
+                .with(offset: c0.length(), oldOffset: oldValue?.c0.length() ?? 0)
     }
 
     @inline(__always)
@@ -102,27 +103,27 @@ extension ComponentSet.Either: ComponentBase, _Component where C0: ComponentBase
     }
 
     @inline(__always)
-    func _difference(with oldValue: ComponentSet.Either<C0, C1>?) -> [Difference] {
+    func _difference(with oldValue: ComponentSet.Either<C0, C1>?) -> Differences {
         if C0.self is C1.Type && C1.self is C0.Type && !(C0.self is AnyComponent.Type) {
-            return c0?.difference(with: oldValue?.c0 ?? (oldValue?.c1 as? C0)) ??
-                c1?.difference(with: oldValue?.c1 ?? (oldValue?.c0 as? C1)) ?? []
+            return (c0?.difference(with: oldValue?.c0 ?? (oldValue?.c1 as? C0)) ??
+                c1?.difference(with: oldValue?.c1 ?? (oldValue?.c0 as? C1)))!
         }
-        var result = [Difference]()
+        var result = Differences.empty
         switch (self, oldValue) {
         case (.c0(let c0), .c0(let oldValue)):
-            result += c0.difference(with: oldValue)
+            result = result + c0.difference(with: oldValue)
         case (.c1(let c1), .c1(let oldValue)):
-            result += c1.difference(with: oldValue)
+            result = result + c1.difference(with: oldValue)
         case (.c0(let c0), .c1(let oldValue)):
-            result += (0..<oldValue.length()).reversed().map { Difference(index: $0, change: .remove(oldValue)) }
+            result = result + Differences.removeRange(range: 0..<oldValue.length(), component: oldValue)
             fallthrough
         case (.c0(let c0), .none):
-            result += c0.difference(with: nil)
+            result = result + c0.difference(with: nil)
         case (.c1(let c1), .c0(let oldValue)):
-            result += (0..<oldValue.length()).reversed().map { Difference(index: $0, change: .remove(oldValue)) }
+            result = result + Differences.removeRange(range: 0..<oldValue.length(), component: oldValue)
             fallthrough
         case (.c1(let c1), .none):
-            result += c1.difference(with: nil)
+            result = result + c1.difference(with: nil)
         }
         return result
     }

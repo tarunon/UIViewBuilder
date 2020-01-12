@@ -26,14 +26,14 @@ extension _NativeRepresentable {
     }
 
     @inline(__always)
-    func _difference(with oldValue: Self?) -> [Difference] {
+    func _difference(with oldValue: Self?) -> Differences {
         if let oldValue = oldValue {
             if !self.isEqual(to: oldValue) {
-                return [Difference(index: 0, change: .update(self))]
+                return .updateSingle(component: self)
             }
-            return [Difference(index: 0, change: .stable(self))]
+            return .stableSingle(component: self)
         }
-        return [Difference(index: 0, change: .insert(self))]
+        return .insertSingle(component: self)
     }
 
     @inline(__always)
@@ -49,14 +49,14 @@ extension _NativeRepresentable {
 
 extension NativeRepresentable {
     @inline(__always)
-    func difference(oldValue: Self?) -> [Difference] {
+    func difference(with oldValue: Self?) -> Differences {
         if let oldValue = oldValue {
             if !self.isEqual(to: oldValue) {
-                return [Difference(index: 0, change: .update(self))]
+                return .updateSingle(component: self)
             }
-            return [Difference(index: 0, change: .stable(self))]
+            return .stableSingle(component: self)
         }
-        return [Difference(index: 0, change: .insert(self))]
+        return .insertSingle(component: self)
     }
 }
 

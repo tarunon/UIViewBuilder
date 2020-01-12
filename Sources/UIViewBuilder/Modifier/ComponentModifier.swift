@@ -13,12 +13,6 @@ public extension ComponentBase {
     }
 }
 
-private extension ComponentBase {
-    func _modifier<Modifier: ComponentModifier>(modifier: Modifier) -> ComponentBase {
-        return self.modifier(modifier: modifier)
-    }
-}
-
 public protocol ComponentModifier: MaybeEquatable {
     associatedtype Body: ComponentBase
     func body(content: Content) -> Body
@@ -45,22 +39,6 @@ protocol _ComponentModifier {
 extension _ComponentModifier where Self: ComponentModifier {
     func asAnyComponentModifier() -> AnyComponentModifier {
         AnyComponentModifier(modifier: self)
-    }
-}
-
-extension Difference {
-    func with<Modifier: ComponentModifier>(modifier: Modifier, changed: Bool) -> Difference {
-        switch self.change {
-        case .insert(let component):
-            return Difference(index: index, change: .insert(component._modifier(modifier: modifier)))
-        case .update(let component),
-             .stable(let component) where changed:
-            return Difference(index: index, change: .update(component._modifier(modifier: modifier)))
-        case .remove(let component):
-            return Difference(index: index, change: .remove(component._modifier(modifier: modifier)))
-        case .stable(let component):
-            return Difference(index: index, change: .stable(component._modifier(modifier: modifier)))
-        }
     }
 }
 
@@ -152,9 +130,7 @@ public struct ModifiedContent<Content: ComponentBase, Modifier: ComponentModifie
     }
 
     @inline(__always)
-    func _difference(with oldValue: Self?) -> [Difference] {
-        content.difference(with: oldValue?.content).map {
-            $0.with(modifier: modifier, changed: !self.modifier.isEqual(to: oldValue?.modifier))
-        }
+    func _difference(with oldValue: Self?) -> Differences {
+        content.difference(with: oldValue?.content).with(modifier: modifier, changed: !self.modifier.isEqual(to: oldValue?.modifier))
     }
 }

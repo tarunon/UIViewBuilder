@@ -18,7 +18,7 @@ extension ComponentBase {
     }
 
     @inline(__always)
-    func difference(with oldValue: Self?) -> [Difference] {
+    func difference(with oldValue: Self?) -> Differences {
         asAnyComponent()._difference(with: oldValue?.asAnyComponent())
     }
 
@@ -35,7 +35,7 @@ extension ComponentBase {
 
 protocol _Component: ComponentBase {
     func _create() -> [NativeViewProtocol]
-    func _difference(with oldValue: Self?) -> [Difference]
+    func _difference(with oldValue: Self?) -> Differences
     func _update(native: NativeViewProtocol)
     func _length() -> Int
 }
@@ -55,11 +55,11 @@ extension Component {
     public func asAnyComponent() -> AnyComponent {
         return AnyComponent(
             create: body.create,
-            difference: { (oldValue) -> [Difference] in
+            difference: { (oldValue) in
                 if !self.isEqual(to: oldValue) {
                     return self.body.difference(with: oldValue?.body)
                 }
-                return []
+                return .empty
             },
             update: body.update(native:),
             length: body.length,

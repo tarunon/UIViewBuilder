@@ -16,11 +16,11 @@ class ComponentModifierTests: XCTestCase {
             }.backgroundColor(.red) {
                 didSet {
                     let differences = components.difference(with: oldValue)
-                    switch differences[0].change {
+                    switch differences.sorted()[0].change {
                     case .stable(let component):
                         XCTAssertTrue(component is ModifiedContent<Label, BackgroundColorModifier>)
                     default:
-                        XCTFail("wrong diff: \(differences[0])")
+                        XCTFail("wrong diff: \(differences.sorted()[0])")
                     }
                 }
             }
@@ -32,11 +32,11 @@ class ComponentModifierTests: XCTestCase {
             }.backgroundColor(.red) {
                 didSet {
                     let differences = components.difference(with: oldValue)
-                    switch differences[0].change {
+                    switch differences.sorted()[0].change {
                     case .update(let component):
                         XCTAssertTrue(component is ModifiedContent<Label, BackgroundColorModifier>)
                     default:
-                        XCTFail("wrong diff: \(differences[0])")
+                        XCTFail("wrong diff: \(differences.sorted()[0])")
                     }
                 }
             }
@@ -82,11 +82,11 @@ class ComponentModifierTests: XCTestCase {
             }.modifier(modifier: MyModifier(backgroundColor: .red, foregroundColor: .yellow)) {
                 didSet {
                     let differences = components.difference(with: oldValue)
-                    switch differences[0].change {
+                    switch differences.sorted()[0].change {
                     case .stable(let component):
                         XCTAssertTrue(component is ModifiedContent<Label, MyModifier>)
                     default:
-                        XCTFail("wrong diff: \(differences[0])")
+                        XCTFail("wrong diff: \(differences.sorted()[0])")
                     }
                 }
             }

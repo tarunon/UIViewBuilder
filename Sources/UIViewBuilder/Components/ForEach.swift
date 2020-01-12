@@ -34,22 +34,22 @@ public struct ForEach<Data: RandomAccessCollection, ID: Equatable, Component: Co
     }
 
     @inline(__always)
-    private func difference(reducer: Reducer, oldCreation: (Data.Element) -> Component) -> [Difference] {
+    private func difference(reducer: Reducer, oldCreation: (Data.Element) -> Component) -> Differences {
         let content = reducer.fixedData.map { $0.map(creation) }
         let oldContent = reducer.fixedOldData.map { $0.map(oldCreation) }
 
-        return zip(content, oldContent).reduce(into: (viewIndex: 0, oldViewIndex: 0, differences: [Difference]())) { (result, value) in
+        return zip(content, oldContent).reduce(into: (viewIndex: 0, oldViewIndex: 0, differences: Differences.empty)) { (result, value) in
             switch value {
             case (.some(let component), .some(let oldComponent)):
-                result.differences += component.difference(with: oldComponent).map { $0.with(offset: result.viewIndex, oldOffset: result.oldViewIndex) }
+                result.differences = result.differences + component.difference(with: oldComponent).with(offset: result.viewIndex, oldOffset: result.oldViewIndex)
                 result.viewIndex += component.length()
                 result.oldViewIndex += oldComponent.length()
             case (.some(let component), .none):
-                result.differences += component.difference(with: nil).map { $0.with(offset: result.viewIndex, oldOffset: result.oldViewIndex) }
+                result.differences = result.differences + component.difference(with: nil).with(offset: result.viewIndex, oldOffset: result.oldViewIndex)
                 result.viewIndex += component.length()
             case (.none, .some(let oldComponent)):
                 let length = oldComponent.length()
-                result.differences += (result.oldViewIndex..<result.oldViewIndex + length).map { Difference(index: $0, change: .remove(oldComponent)) }
+                result.differences = result.differences + Differences.removeRange(range: result.oldViewIndex..<result.oldViewIndex + length, component: oldComponent)
                 result.oldViewIndex += length
             case (.none, .none):
                 break
@@ -58,7 +58,7 @@ public struct ForEach<Data: RandomAccessCollection, ID: Equatable, Component: Co
     }
 
     @inline(__always)
-    func _difference(with oldValue: ForEach?) -> [Difference] {
+    func _difference(with oldValue: ForEach?) -> Differences {
         guard #available(iOS 13, *) else {
             return differenceLegacy(with: oldValue)
         }
@@ -89,7 +89,7 @@ public struct ForEach<Data: RandomAccessCollection, ID: Equatable, Component: Co
     }
 
     @inline(__always)
-    func differenceLegacy(with oldValue: ForEach?) -> [Difference] {
+    func differenceLegacy(with oldValue: ForEach?) -> Differences {
         let oldData = oldValue?.data.map { $0 } ?? []
         let reducer: Reducer
         if data.count == oldData.count {

@@ -16,7 +16,7 @@ protocol Mountable: class {
 }
 
 extension Mountable {
-    func update(differences: [Difference], natives: inout [NativeViewProtocol], cache: NativeViewCache?, parent: UIViewController) {
+    func update(differences: Differences, natives: inout [NativeViewProtocol], cache: NativeViewCache?, parent: UIViewController) {
         differences.sorted().forEach { difference in
             switch difference.change {
             case .remove(let component):

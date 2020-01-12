@@ -13,7 +13,7 @@ public struct AnyComponent: ComponentBase, _Component {
             fatalError()
         }
 
-        func _difference(with oldValue: AnyComponent.Base?) -> [Difference] {
+        func _difference(with oldValue: AnyComponent.Base?) -> Differences {
             fatalError()
         }
 
@@ -44,7 +44,7 @@ public struct AnyComponent: ComponentBase, _Component {
         }
 
         @inline(__always)
-        override func _difference(with oldValue: AnyComponent.Base?) -> [Difference] {
+        override func _difference(with oldValue: AnyComponent.Base?) -> Differences {
             content._difference(with: oldValue?.as(Content.self))
         }
 
@@ -60,7 +60,7 @@ public struct AnyComponent: ComponentBase, _Component {
     }
 
     typealias Create = () -> [NativeViewProtocol]
-    typealias DifferenceFunc<Component> = (Component?) -> [Difference]
+    typealias DifferenceFunc<Component> = (Component?) -> Differences
     typealias Update = (NativeViewProtocol) -> ()
     typealias Length = () -> Int
 
@@ -89,7 +89,7 @@ public struct AnyComponent: ComponentBase, _Component {
         }
 
         @inline(__always)
-        override func _difference(with oldValue: AnyComponent.Base?) -> [Difference] {
+        override func _difference(with oldValue: AnyComponent.Base?) -> Differences {
             difference(oldValue)
         }
 
@@ -129,7 +129,7 @@ public struct AnyComponent: ComponentBase, _Component {
     }
 
     @inline(__always)
-    func _difference(with oldValue: AnyComponent?) -> [Difference] {
+    func _difference(with oldValue: AnyComponent?) -> Differences {
         box._difference(with: oldValue?.box)
     }
 
