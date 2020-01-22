@@ -7,7 +7,7 @@
 
 import UIKit
 
-fileprivate extension ComponentBase {
+fileprivate extension RepresentableBase {
     typealias Cell = NativeTableViewCell<Self>
     
     static func registerCellIfNeeded(to parent: _NativeList) {
@@ -25,7 +25,7 @@ fileprivate extension ComponentBase {
     }
 }
 
-class NativeTableViewCell<Content: ComponentBase>: UITableViewCell, Mountable {
+class NativeTableViewCell<Content: RepresentableBase>: UITableViewCell, Mountable {
     weak var parentViewController: _NativeList!
     var contentViewControllers: [UIViewController] = []
     var component: Content! {
@@ -103,12 +103,12 @@ class NativeTableViewCell<Content: ComponentBase>: UITableViewCell, Mountable {
 }
 
 class _NativeList: UITableViewController {
-    var components: [ComponentBase] = []
+    var components: [RepresentableBase] = []
     var cache = NativeViewCache()
     var registedIdentifiers = Set<String>()
 
-    func update(graph: Differences) {
-        graph.listen { differences in
+    func update(difference: Differences) {
+        difference.listen { differences in
             tableView.reloadData {
                 differences.forEach { difference in
                     switch difference.change {
@@ -144,16 +144,17 @@ class _NativeList: UITableViewController {
     }
 }
 
-final class NativeList<Content: ComponentBase>: _NativeList {
+final class NativeList<Content: ComponentBase>: _NativeList, NativeViewProtocol {
     var content: Content {
         didSet {
-            update(graph: content.difference(with: oldValue))
+            update(difference: content.difference(with: oldValue))
         }
     }
 
     init(content: Content) {
         self.content = content
         super.init(style: .plain)
+        setup(content: content) { self.content.properties.update() }
     }
 
     @available(*, unavailable)
@@ -164,8 +165,16 @@ final class NativeList<Content: ComponentBase>: _NativeList {
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.beginUpdates()
-        update(graph: content.difference(with: nil))
+        update(difference: content.difference(with: nil))
         tableView.endUpdates()
+    }
+
+    func mount(to target: Mountable, at index: Int, parent: UIViewController) {
+        target.mount(viewController: self, at: index, parent: parent)
+    }
+
+    func unmount(from target: Mountable) {
+        target.unmount(viewController: self)
     }
 }
 
@@ -180,7 +189,7 @@ public struct List<Content: ComponentBase>: ComponentBase, NativeRepresentable {
 
     @inline(__always)
     func create() -> NativeList<Content> {
-        NativeList(content: content)
+        .init(content: content)
     }
 
     @inline(__always)

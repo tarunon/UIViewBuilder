@@ -15,10 +15,10 @@ class ComponentModifierTests: XCTestCase {
                 Label(text: "\($0)")
             }.backgroundColor(.red) {
                 didSet {
-                    let difference = components.difference(with: oldValue).differences[0]
+                    let difference = components._difference(with: oldValue).differences[0]
                     switch difference.change {
                     case .stable:
-                        XCTAssertTrue(difference.component is ModifiedContent<Label, BackgroundColorModifier>)
+                        XCTAssertTrue(difference.component is _ModifiedContent<Label, BackgroundColorModifier>, "wrong type: \(difference.component)")
                     default:
                         XCTFail("wrong diff: \(difference)")
                     }
@@ -31,10 +31,10 @@ class ComponentModifierTests: XCTestCase {
                 Label(text: "\($0)")
             }.backgroundColor(.red) {
                 didSet {
-                    let difference = components.difference(with: oldValue).differences[0]
+                    let difference = components._difference(with: oldValue).differences[0]
                     switch difference.change {
                     case .update:
-                        XCTAssertTrue(difference.component is ModifiedContent<Label, BackgroundColorModifier>)
+                        XCTAssertTrue(difference.component is _ModifiedContent<Label, BackgroundColorModifier>, "wrong type: \(difference.component)")
                     default:
                         XCTFail("wrong diff: \(difference)")
                     }
@@ -54,7 +54,7 @@ class ComponentModifierTests: XCTestCase {
             },
             tests: [
                 Assert(fixture: (), assert: { _, vc in
-                    let button = (vc._view.stackView.subviews.first as! UIButton)
+                    let button = (vc.stackView.subviews.first as! UIButton)
                     XCTAssertEqual(button.allTargets.count, 1)
                     XCTAssertEqual(button.allControlEvents, UIControl.Event.touchUpInside)
                 })
@@ -81,10 +81,10 @@ class ComponentModifierTests: XCTestCase {
                 Label(text: "\($0)")
             }.modifier(modifier: MyModifier(backgroundColor: .red, foregroundColor: .yellow)) {
                 didSet {
-                    let difference = components.difference(with: oldValue).differences[0]
+                    let difference = components._difference(with: oldValue).differences[0]
                     switch difference.change {
                     case .stable:
-                        XCTAssertTrue(difference.component is ModifiedContent<Label, MyModifier>)
+                        XCTAssertTrue(difference.component is _ModifiedContent<Label, MyModifier>, "wrong type: \(difference.component)")
                     default:
                         XCTFail("wrong diff: \(difference)")
                     }
@@ -107,7 +107,7 @@ class ComponentModifierTests: XCTestCase {
                 },
                 tests: [
                     Assert(fixture: (), assert: { _, vc in
-                        let view = vc._view.stackView.subviews.first
+                        let view = vc.stackView.subviews.first
                         XCTAssertEqual(view?.backgroundColor, .red)
                         XCTAssertEqual(view?.tintColor, .yellow)
                     })

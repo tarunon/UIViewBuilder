@@ -7,11 +7,16 @@
 
 import UIKit
 
-public protocol ComponentBase: MaybeEquatable {
+public protocol _Component: MaybeEquatable {
     func asAnyComponent() -> AnyComponent
 }
 
-extension ComponentBase {
+public protocol ComponentBase: _Component {
+    associatedtype Properties: DynamicProperty
+    var properties: Properties { get set }
+}
+
+extension _Component {
     @inline(__always)
     func difference(with oldValue: Self?) -> Differences {
         asAnyComponent()._difference(with: oldValue?.asAnyComponent())
@@ -20,6 +25,18 @@ extension ComponentBase {
     @inline(__always)
     func destroy() -> Differences {
         asAnyComponent()._destroy()
+    }
+
+    @inline(__always)
+    var modify: AnyComponent {
+        _read {
+            yield asAnyComponent()
+        }
+        _modify {
+            var tmp = asAnyComponent()
+            yield &tmp
+            self = tmp.box.as(Self.self)!
+        }
     }
 }
 
@@ -52,14 +69,9 @@ extension Component {
             content: self
         )
     }
-}
 
-extension ComponentBase {
-    static var reuseIdentifier: String {
-        return String(describing: ObjectIdentifier(self))
-    }
-
-    var reuseIdentifier: String {
-        return Self.reuseIdentifier
+    public var properties: ComponentSet.Empty {
+        get { .init() }
+        set {}
     }
 }

@@ -41,6 +41,7 @@ final class NativeScrollView<Content: ComponentBase>: NativeViewProtocol, Mounta
     init(axes: Axis.Set, content: Content) {
         self.axes = axes
         self.content = content
+        setup(content: content) { self.content.properties.update() }
     }
 
     @inline(__always)
@@ -125,6 +126,7 @@ final class NativeScrollView<Content: ComponentBase>: NativeViewProtocol, Mounta
 }
 
 public struct ScrollView<Content: ComponentBase>: ComponentBase, RepresentableBase, NativeRepresentable {
+
     typealias Native = NativeScrollView<Content>
     public var axes: Axis.Set
     public var content: Content

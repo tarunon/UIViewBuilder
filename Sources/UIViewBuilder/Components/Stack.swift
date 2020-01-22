@@ -41,6 +41,7 @@ final class NativeStack<Content: ComponentBase, Config: StackConfig>: NativeView
 
     init(config: Config.Type, content: Content) {
         self.content = content
+        setup(content: content) { self.content.properties.update() }
     }
 
     @inline(__always)
@@ -79,7 +80,7 @@ final class NativeStack<Content: ComponentBase, Config: StackConfig>: NativeView
 protocol StackComponent: NativeRepresentable where Native == NativeStack<Content, Config> {
     associatedtype Config: StackConfig
     associatedtype Content: ComponentBase
-    var content: Content { get }
+    var content: Content { get set }
 }
 
 extension StackComponent {
@@ -91,6 +92,11 @@ extension StackComponent {
     @inline(__always)
     func update(native: NativeStack<Content, Config>) {
         native.content = content
+    }
+
+    public var properties: Content.Properties {
+        get { content.properties }
+        set { content.properties = newValue }
     }
 }
 

@@ -51,6 +51,8 @@ extension ComponentSet.Either where C1 == ComponentSet.Empty {
 }
 
 extension ComponentSet.Empty: ComponentBase, NodeComponent {
+    public typealias Properties = ComponentSet.Empty
+
     @inline(__always)
     func _difference(with oldValue: ComponentSet.Empty?) -> Differences {
         .empty
@@ -60,9 +62,14 @@ extension ComponentSet.Empty: ComponentBase, NodeComponent {
     func _destroy() -> Differences {
         .empty
     }
+
+    public var properties: ComponentSet.Empty {
+        get { self }
+        set { self = newValue }
+    }
 }
 
-extension ComponentSet.Pair: ComponentBase, NodeComponent where C0: ComponentBase, C1: ComponentBase {
+extension ComponentSet.Pair: NodeComponent, ComponentBase, _Component where C0: ComponentBase, C1: ComponentBase {
     @inline(__always)
     func _difference(with oldValue: ComponentSet.Pair<C0, C1>?) -> Differences {
         c0.difference(with: oldValue?.c0) + c1.difference(with: oldValue?.c1)
@@ -72,9 +79,24 @@ extension ComponentSet.Pair: ComponentBase, NodeComponent where C0: ComponentBas
     func _destroy() -> Differences {
         c0.destroy() + c1.destroy()
     }
+
+    public typealias Properties = ComponentSet.Pair<C0.Properties, C1.Properties>
+
+    @inline(__always)
+    public var properties: Properties {
+        _read {
+            yield .init(c0: c0.properties, c1: c1.properties)
+        }
+        _modify {
+            var tmp = Properties(c0: c0.properties, c1: c1.properties)
+            yield &tmp
+            c0.properties = tmp.c0
+            c1.properties = tmp.c1
+        }
+    }
 }
 
-extension ComponentSet.Either: ComponentBase, NodeComponent where C0: ComponentBase, C1: ComponentBase {
+extension ComponentSet.Either: NodeComponent, ComponentBase, _Component where  C0: ComponentBase, C1: ComponentBase {
     @inline(__always)
     func _difference(with oldValue: ComponentSet.Either<C0, C1>?) -> Differences {
         if C0.self is C1.Type && C1.self is C0.Type && !(C0.self is AnyComponent.Type) {
@@ -101,10 +123,41 @@ extension ComponentSet.Either: ComponentBase, NodeComponent where C0: ComponentB
         return differences
     }
 
+    @inline(__always)
     func _destroy() -> Differences {
         switch self {
         case .c0(let c0): return c0.destroy()
         case .c1(let c1): return c1.destroy()
         }
+    }
+
+    public typealias Properties = ComponentSet.Either<C0.Properties, C1.Properties>
+
+    @inline(__always)
+    public var properties: ComponentSet.Either<C0.Properties, C1.Properties> {
+        _read {
+            switch self {
+            case .c0(let c0):
+                yield .c0(c0.properties)
+            case .c1(let c1):
+                yield .c1(c1.properties)
+            }
+        }
+        _modify {
+            switch self {
+            case .c0(var c0):
+                var tmp = Properties.c0(c0.properties)
+                yield &tmp
+                c0.properties = tmp.c0!
+                self = .c0(c0)
+            case .c1(var c1):
+                var tmp = Properties.c1(c1.properties)
+                yield &tmp
+                c1.properties = tmp.c1!
+                self = .c1(c1)
+            }
+
+        }
+
     }
 }

@@ -7,20 +7,33 @@
 
 import UIKit
 
-public struct ForEach<Data: RandomAccessCollection, ID: Equatable, Component: ComponentBase>: ComponentBase, NodeComponent where Data.Index == Int {
-    public var data: Data
+public struct ForEach<Data: RandomAccessCollection, ID: Hashable, Component: ComponentBase>: ComponentBase, NodeComponent where Data.Index == Int {
+
+    public typealias Properties = [ID: Component.Properties]
+    public var data: Data {
+        didSet {
+            properties
+                .merge(
+                    data.filter { !properties.keys.contains($0[keyPath: identify]) }
+                        .map { (key: $0[keyPath: identify], value: creation($0).properties) },
+                    uniquingKeysWith: { x, _ in x }
+            )
+        }
+    }
+    public var properties: [ID : Component.Properties]
+
+    var content: [Component] {
+        data.map(create)
+    }
 
     var creation: (Data.Element) -> Component
     var identify: KeyPath<Data.Element, ID>
-
-    var content: [Component] {
-        data.map(creation)
-    }
 
     public init(data: Data, identify: KeyPath<Data.Element, ID>, @ComponentBuilder creation: @escaping (Data.Element) -> Component) {
         self.data = data
         self.creation = creation
         self.identify = identify
+        self.properties = Dictionary(uniqueKeysWithValues: data.map { (key: $0[keyPath: identify], value: creation($0).properties) })
     }
 
     private struct Reducer {
@@ -29,8 +42,15 @@ public struct ForEach<Data: RandomAccessCollection, ID: Equatable, Component: Co
     }
 
     @inline(__always)
-    private func make(reducer: Reducer, oldCreation: (Data.Element) -> Component) -> Differences {
-        let content = reducer.fixedData.map { $0.map(creation) }
+    private func create(_ element: Data.Element) -> Component {
+        var component = self.creation(element)
+        component.properties = properties[element[keyPath: identify]] ?? component.properties
+        return component
+    }
+
+    @inline(__always)
+    private func difference(reducer: Reducer, oldCreation: (Data.Element) -> Component) -> Differences {
+        let content = reducer.fixedData.map { $0.map(create) }
         let oldContent = reducer.fixedOldData.map { $0.map(oldCreation) }
 
         return zip(content, oldContent).reduce(into: Differences.empty) { (result, value) in
@@ -75,7 +95,7 @@ public struct ForEach<Data: RandomAccessCollection, ID: Equatable, Component: Co
 
         reducer.fixedData = reducer.fixedData.reversed()
 
-        return make(reducer: reducer, oldCreation: oldValue?.creation ?? { _ in fatalError() })
+        return difference(reducer: reducer, oldCreation: oldValue?.create ?? { _ in fatalError() })
     }
 
     @inline(__always)
@@ -89,7 +109,7 @@ public struct ForEach<Data: RandomAccessCollection, ID: Equatable, Component: Co
         } else {
             reducer = Reducer(fixedData: data.map { $0 }, fixedOldData: oldData + Array(repeating: Data.Element?.none, count: data.count - oldData.count))
         }
-        return make(reducer: reducer, oldCreation: oldValue?.creation ?? { _ in fatalError() })
+        return difference(reducer: reducer, oldCreation: oldValue?.create ?? { _ in fatalError() })
     }
 
     @inline(__always)

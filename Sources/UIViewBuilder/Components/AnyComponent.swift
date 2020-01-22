@@ -25,8 +25,17 @@ public struct AnyComponent: ComponentBase {
             fatalError()
         }
 
+        func _updateProperties() {
+            fatalError()
+        }
+
         func `as`<Content>(_ componentType: Content.Type) -> Content? {
             (self as? Box<Content>)?.content
+        }
+
+        var properties: AnyDynamicProperty {
+            get { fatalError() }
+            set { fatalError() }
         }
     }
 
@@ -37,7 +46,7 @@ public struct AnyComponent: ComponentBase {
         }
     }
 
-    final class NodeBox<Content: NodeComponent>: Box<Content> {
+    final class NodeBox<Content: NodeComponent & ComponentBase>: Box<Content> {
         @inline(__always)
         override func _difference(with oldValue: AnyComponent.Base?) -> Differences {
             content._difference(with: oldValue?.as(Content.self))
@@ -47,9 +56,15 @@ public struct AnyComponent: ComponentBase {
         override func _destroy() -> Differences {
             content._destroy()
         }
+
+        @inline(__always)
+        override var properties: AnyDynamicProperty {
+            get { AnyDynamicProperty { content.properties } }
+            set { content.properties = newValue.body as! Content.Properties }
+        }
     }
 
-    final class RepresentableBox<Content: RepresentableBase>: Box<Content> {
+    final class RepresentableBox<Content: RepresentableBase & ComponentBase>: Box<Content> {
         @inline(__always)
         override func _create() -> NativeViewProtocol {
             content.create()
@@ -74,6 +89,11 @@ public struct AnyComponent: ComponentBase {
         @inline(__always)
         override func _destroy() -> Differences {
             .remove(component: content)
+        }
+
+        override var properties: AnyDynamicProperty {
+            get { AnyDynamicProperty { content.properties } }
+            set { content.properties = newValue.body as! Content.Properties }
         }
     }
 
@@ -115,6 +135,12 @@ public struct AnyComponent: ComponentBase {
         override func _destroy() -> Differences {
             destroy()
         }
+
+        @inline(__always)
+        override var properties: AnyDynamicProperty {
+            get { AnyDynamicProperty { content.properties } }
+            set { content.properties = newValue.body as! Content.Properties }
+        }
     }
 
     let box: Base
@@ -123,11 +149,11 @@ public struct AnyComponent: ComponentBase {
         self = creation().asAnyComponent()
     }
 
-    init<Content: NodeComponent>(content: Content) {
+    init<Content: NodeComponent & ComponentBase>(content: Content) {
         self.box = NodeBox(content: content)
     }
 
-    init<Content: RepresentableBase>(content: Content) {
+    init<Content: RepresentableBase & ComponentBase>(content: Content) {
         self.box = RepresentableBox(content: content)
     }
 
@@ -164,5 +190,10 @@ public struct AnyComponent: ComponentBase {
             destroy: self._destroy,
             content: self
         )
+    }
+
+    public var properties: AnyDynamicProperty {
+        get { box.properties }
+        set { box.properties = newValue }
     }
 }

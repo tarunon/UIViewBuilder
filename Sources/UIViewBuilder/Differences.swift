@@ -135,8 +135,8 @@ extension Collection where Element == Difference {
     }
 }
 
-private extension ComponentBase {
+private extension RepresentableBase {
     func _modifier<Modifier: ComponentModifier>(modifier: Modifier) -> RepresentableBase {
-        return self.modifier(modifier: modifier)
+        return _ModifiedContent(content: self, modifier: modifier)
     }
 }

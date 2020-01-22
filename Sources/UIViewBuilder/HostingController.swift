@@ -8,48 +8,18 @@
 import UIKit
 
 public class _HostingController<Component: ComponentBase>: UIViewController, Mountable {
-    class View: UIView {
-        weak var parent: _HostingController?
-        lazy var stackView = lazy(type: UIStackView.self) {
-            let stackView = UIStackView()
-            stackView.translatesAutoresizingMaskIntoConstraints = false
-            stackView.axis = .vertical
-            addSubview(stackView)
-            NSLayoutConstraint.activate(
-                [
-                    stackView.topAnchor.constraint(equalTo: topAnchor),
-                    stackView.leftAnchor.constraint(equalTo: leftAnchor),
-                    stackView.rightAnchor.constraint(equalTo: rightAnchor),
-                    stackView.bottomAnchor.constraint(equalTo: bottomAnchor)
-                ]
-            )
-            return stackView
-        }
-        init(parent: _HostingController) {
-            self.parent = parent
-            super.init(frame: .zero)
-        }
-
-        @available(*, unavailable)
-        required init?(coder: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-
-        override func layoutSubviews() {
-            if let parent = parent, parent.oldComponent != nil {
-                parent.update(graph: parent.component.difference(with: parent.oldComponent), natives: &parent.natives, cache: parent.cache, parent: parent)
-                parent.oldComponent = nil
-            }
-            super.layoutSubviews()
-        }
-    }
-
     let creation: () -> Component
     var oldComponent: Component?
     public lazy var component = self.creation()
-    lazy var _view = View(parent: self)
     var natives = [NativeViewProtocol]()
     let cache = NativeViewCache()
+
+    lazy var stackView = lazy(type: UIStackView.self) {
+        let stackView = UIStackView()
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.axis = .vertical
+        return stackView
+    }
 
     public init(@ComponentBuilder creation: @escaping () -> Component) {
         self.creation = creation
@@ -66,7 +36,16 @@ public class _HostingController<Component: ComponentBase>: UIViewController, Mou
     }
 
     public override func loadView() {
-        view = _view
+        view = UIView()
+        view.addSubview(stackView)
+        NSLayoutConstraint.activate(
+            [
+                stackView.topAnchor.constraint(equalTo: view.topAnchor),
+                stackView.leftAnchor.constraint(equalTo: view.leftAnchor),
+                stackView.rightAnchor.constraint(equalTo: view.rightAnchor),
+                stackView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ]
+        )
     }
 
     public override func viewDidLoad() {
@@ -81,20 +60,20 @@ public class _HostingController<Component: ComponentBase>: UIViewController, Mou
     }
 
     func mount(view: UIView, at index: Int) {
-        _view.stackView.insertArrangedSubview(view, at: index)
+        stackView.insertArrangedSubview(view, at: index)
     }
 
     func mount(viewController: UIViewController, at index: Int, parent: UIViewController) {
-        _view.stackView.insertArrangedViewController(viewController, at: index, parentViewController: parent)
+        stackView.insertArrangedViewController(viewController, at: index, parentViewController: parent)
     }
 
     func unmount(view: UIView) {
-        _view.stackView.removeArrangedSubview(view)
+        stackView.removeArrangedSubview(view)
         view.removeFromSuperview()
     }
 
     func unmount(viewController: UIViewController) {
-        _view.stackView.removeArrangedViewController(viewController)
+        stackView.removeArrangedViewController(viewController)
     }
 }
 
@@ -105,6 +84,14 @@ public class HostingController<Component: ComponentBase>: _HostingController<Com
                 oldComponent = component
             }
             view.setNeedsLayout()
+        }
+    }
+
+    public override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        if oldComponent != nil {
+            update(graph: component.difference(with: oldComponent), natives: &natives, cache: cache, parent: self)
+            oldComponent = nil
         }
     }
 }
