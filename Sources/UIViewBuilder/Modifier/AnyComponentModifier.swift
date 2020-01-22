@@ -7,16 +7,12 @@
 
 import UIKit
 
-public struct AnyComponentModifier: ComponentModifier, _ComponentModifier {
+public struct AnyComponentModifier: ComponentModifier {
     public typealias Content = AnyComponent
     public typealias Body = AnyComponent
 
-    class Base: _ComponentModifier {
-        func _apply(to view: UIView) {
-            fatalError()
-        }
-
-        func _apply(to viewController: UIViewController) {
+    class Base {
+        func _modify(_ originalUpdate: Update) -> Update {
             fatalError()
         }
 
@@ -32,71 +28,48 @@ public struct AnyComponentModifier: ComponentModifier, _ComponentModifier {
         }
     }
 
-    final class GenericBox<Modifier: ComponentModifier & _ComponentModifier>: Box<Modifier> {
-        override func _apply(to view: UIView) {
-            modifier._apply(to: view)
-        }
+    typealias Modify<T> = (T) -> T
+    typealias BodyFunc<Body> = (AnyComponent) -> Body
 
-        override func _apply(to viewController: UIViewController) {
-            modifier._apply(to: viewController)
-        }
+    final class ClosureBox<Modifier: ComponentModifier, Body: ComponentBase>: Box<Modifier> {
+        var modify: Modify<Update>
+        var bodyFunc: BodyFunc<Body>
 
-        override func body(content: AnyComponent) -> AnyComponent {
-            modifier.body(content: content.box.as(Modifier.Content.self)!).asAnyComponent()
-        }
-    }
-
-    typealias Apply<T> = (T) -> ()
-    typealias BodyFunc<Content, Body> = (Content) -> Body
-
-    final class ClosureBox<Modifier: ComponentModifier>: Box<Modifier> {
-        var applyToView: Apply<UIView>
-        var applyToViewController: Apply<UIViewController>
-        var bodyFunc: BodyFunc<Modifier.Content, Modifier.Body>
-
-        init(applyToView: @escaping Apply<UIView>, applyToViewController: @escaping Apply<UIViewController>, bodyFunc: @escaping BodyFunc<Modifier.Content, Modifier.Body>, modifier: Modifier) {
-            self.applyToView = applyToView
-            self.applyToViewController = applyToViewController
+        init(modify: @escaping Modify<Update>, bodyFunc: @escaping BodyFunc<Body>, modifier: Modifier) {
+            self.modify = modify
             self.bodyFunc = bodyFunc
             super.init(modifier: modifier)
         }
 
-        override func _apply(to view: UIView) {
-            applyToView(view)
-        }
-
-        override func _apply(to viewController: UIViewController) {
-            applyToViewController(viewController)
+        override func _modify(_ originalUpdate: Update) -> Update {
+            modify(originalUpdate)
         }
 
         override func body(content: AnyComponent) -> AnyComponent {
-            bodyFunc(content.box.as(Modifier.Content.self)!).asAnyComponent()
+            bodyFunc(content).asAnyComponent()
         }
     }
 
     var box: Base
 
-    init<Modifier: ComponentModifier & _ComponentModifier>(modifier: Modifier) {
-        self.box = GenericBox(modifier: modifier)
+    init<Modifier: ComponentModifier, Body: ComponentBase>(modify: @escaping Modify<Update>, bodyFunc: @escaping BodyFunc<Body>, modifier: Modifier) {
+        self.box = ClosureBox(modify: modify, bodyFunc: bodyFunc, modifier: modifier)
     }
 
-    init<Modifier: ComponentModifier>(applyToView: @escaping Apply<UIView>, applyToViewController: @escaping Apply<UIViewController>, bodyFunc: @escaping BodyFunc<Modifier.Content, Modifier.Body>, modifier: Modifier) {
-        self.box = ClosureBox(applyToView: applyToView, applyToViewController: applyToViewController, bodyFunc: bodyFunc, modifier: modifier)
+    func _modify(_ originalUpdate: Update) -> Update {
+        box._modify(originalUpdate)
     }
 
-    func _apply(to view: UIView) {
-        box._apply(to: view)
-    }
-
-    func _apply(to viewController: UIViewController) {
-        box._apply(to: viewController)
-    }
 
     public func body(content: AnyComponent) -> AnyComponent {
         box.body(content: content)
     }
 
     public func asAnyComponentModifier() -> AnyComponentModifier {
-        AnyComponentModifier(modifier: self)
+        AnyComponentModifier(
+            modify: _modify,
+            bodyFunc: body(content:),
+            modifier: self
+        )
     }
 }

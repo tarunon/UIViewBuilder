@@ -117,11 +117,19 @@ class ComponentModifierTests: XCTestCase {
     }
 }
 
-struct BackgroundColorModifier: UIViewModifier, Equatable {
+struct BackgroundColorModifier: NativeModifier, Equatable {
     var color: UIColor
 
-    func apply(to view: UIView) {
-        view.backgroundColor = color
+    func modify(_ originalUpdate: Update) -> Update {
+        Update { native in
+            switch native {
+            case .view(let view):
+                view.backgroundColor = self.color
+            case .viewController(let viewController):
+                viewController.view.backgroundColor = self.color
+            }
+            return originalUpdate.update(native)
+        }
     }
 }
 
@@ -131,11 +139,19 @@ extension ComponentBase {
     }
 }
 
-struct ForegroundColorModifier: UIViewModifier, Equatable {
+struct ForegroundColorModifier: NativeModifier, Equatable {
     var color: UIColor
 
-    func apply(to view: UIView) {
-        view.tintColor = color
+    func modify(_ originalUpdate: Update) -> Update {
+        Update { native in
+            switch native {
+            case .view(let view):
+                view.tintColor = self.color
+            case .viewController(let viewController):
+                viewController.view.tintColor = self.color
+            }
+            return originalUpdate.update(native)
+        }
     }
 }
 

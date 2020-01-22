@@ -7,12 +7,15 @@
 
 import UIKit
 
-public class _HostingController<Component: ComponentBase>: UIViewController, Mountable {
+public class _HostingController<Component: ComponentBase>: UIViewController, MountableRenderer {
+
     let creation: () -> Component
-    var oldComponent: Component?
-    public lazy var component = self.creation()
-    var natives = [NativeViewProtocol]()
-    let cache = NativeViewCache()
+    lazy var natives = self.createNatives()
+    var oldContent: Component?
+    lazy var content: Component = self.creation()
+    let cache: NativeViewCache = NativeViewCache()
+    var needsToUpdateContent: Bool = false
+
 
     lazy var stackView = lazy(type: UIStackView.self) {
         let stackView = UIStackView()
@@ -50,13 +53,18 @@ public class _HostingController<Component: ComponentBase>: UIViewController, Mou
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        update(graph: component.difference(with: nil), natives: &natives, cache: cache, parent: self)
-        oldComponent = nil
+        listenProperties()
+        _ = natives
         if #available(iOS 13.0, *) {
             view.backgroundColor = .systemBackground
         } else {
             view.backgroundColor = .white
         }
+    }
+
+    public override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        updateContentIfNeed()
     }
 
     func mount(view: UIView, at index: Int) {
@@ -78,20 +86,13 @@ public class _HostingController<Component: ComponentBase>: UIViewController, Mou
 }
 
 public class HostingController<Component: ComponentBase>: _HostingController<Component> {
-    public override var component: Component {
-        willSet {
-            if oldComponent == nil {
-                oldComponent = component
-            }
-            view.setNeedsLayout()
-        }
+    public var component: Component {
+        set { content = newValue }
+        get { content }
     }
-
-    public override func viewWillLayoutSubviews() {
-        super.viewWillLayoutSubviews()
-        if oldComponent != nil {
-            update(graph: component.difference(with: oldComponent), natives: &natives, cache: cache, parent: self)
-            oldComponent = nil
+    public override var content: Component {
+        didSet {
+            updateContent(oldValue: oldValue)
         }
     }
 }

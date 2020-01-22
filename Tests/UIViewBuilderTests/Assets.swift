@@ -55,15 +55,23 @@ struct Button: Component {
         }
     }
 
-    private class _Handler: NSObject, UIViewModifier {
+    private class _Handler: NSObject, NativeModifier {
         var handler: () -> ()
 
         init(_ handler: @escaping () -> ()) {
             self.handler = handler
         }
 
-        func apply(to view: UIView) {
-            (view as! UIButton).addTarget(self, action: #selector(action), for: .touchUpInside)
+        func modify(_ originalUpdate: Update) -> Update {
+            Update { native in
+                switch native {
+                case .view(let button as UIButton):
+                    button.addTarget(self, action: #selector(self.action), for: .touchUpInside)
+                default:
+                    fatalError()
+                }
+                return originalUpdate.update(native)
+            }
         }
 
         @objc func action() {

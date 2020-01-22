@@ -7,38 +7,32 @@
 
 import UIKit
 
-public protocol UIViewModifier: ComponentModifier where Content == Body {
-    func apply(to view: UIView)
+public struct Update {
+    public enum Native {
+        case view(UIView)
+        case viewController(UIViewController)
+    }
+    public private (set) var update: (Native) -> ()
+    public init(_ update: @escaping (Native) -> ()) {
+        self.update = update
+    }
+    init(_ update: @escaping () -> ()) {
+        self.update = { _ in update() }
+    }
 }
 
-public extension UIViewModifier {
+public protocol NativeModifier: ComponentModifier where Body == AnyComponent {
+    func modify(_ originalUpdate: Update) -> Update
+}
+
+public extension NativeModifier {
     func body(content: AnyComponent) -> AnyComponent {
         content
     }
 
     func asAnyComponentModifier() -> AnyComponentModifier {
         AnyComponentModifier(
-            applyToView: self.apply(to:),
-            applyToViewController: { _ in },
-            bodyFunc: self.body(content:),
-            modifier: self
-        )
-    }
-}
-
-public protocol UIViewControllerModifier: ComponentModifier where Content == Body {
-    func apply(to viewController: UIViewController)
-}
-
-public extension UIViewControllerModifier {
-    func body(content: AnyComponent) -> AnyComponent {
-        content
-    }
-
-    func asAnyComponentModifier() -> AnyComponentModifier {
-        AnyComponentModifier(
-            applyToView: { _ in },
-            applyToViewController: self.apply(to:),
+            modify: self.modify(_:),
             bodyFunc: { $0 },
             modifier: self
         )

@@ -27,7 +27,6 @@ func testComponent<T, Component: ComponentBase>(fixtureType: T.Type, @ComponentB
     tests.dropFirst().forEach {
         vc.component = creation($0.fixture)
         vc.view.layoutIfNeeded()
-        vc.view.updateConstraintsIfNeeded()
 
         $0.assert($0.fixture, vc)
     }

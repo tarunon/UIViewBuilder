@@ -66,14 +66,16 @@ class Benchmark: XCTestCase {
 
             var body: AnyComponent {
                 AnyComponent {
-                    VStack {
-                        ForEach(data: array) {
-                            Label(text: "\($0)")
-                        }
-                        if flag {
-                            Button(text: title)
-                        } else {
-                            TextView(text: title)
+                    ScrollView {
+                        VStack {
+                            ForEach(data: array) {
+                                Label(text: "\($0)")
+                            }
+                            if flag {
+                                Button(text: title)
+                            } else {
+                                TextView(text: title)
+                            }
                         }
                     }
                 }
@@ -107,16 +109,18 @@ class Benchmark: XCTestCase {
             var title: String
 
             var body: some View {
-                SwiftUI.VStack {
-                    SwiftUI.ForEach.init(array, id: \.self) {
-                        Text("\($0)")
-                    }
-                    if flag {
-                        SwiftUI.Button(action: { }) {
+                SwiftUI.ScrollView {
+                    SwiftUI.VStack {
+                        SwiftUI.ForEach.init(array, id: \.self) {
+                            Text("\($0)")
+                        }
+                        if flag {
+                            SwiftUI.Button(action: { }) {
+                                Text(title)
+                            }
+                        } else {
                             Text(title)
                         }
-                    } else {
-                        Text(title)
                     }
                 }
             }

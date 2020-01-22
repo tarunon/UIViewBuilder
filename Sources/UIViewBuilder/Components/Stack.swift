@@ -19,61 +19,55 @@ struct VStackConfig: StackConfig {
     public static let axis = Axis.vertical
 }
 
-final class NativeStack<Content: ComponentBase, Config: StackConfig>: NativeViewProtocol, Mountable {
+final class NativeStack<Content: ComponentBase, Config: StackConfig>: UIStackView, NativeViewProtocol, MountableRenderer {
+    lazy var natives = self.createNatives()
+    var targetParent: UIViewController?
+    var oldContent: Content?
     var content: Content {
         didSet {
-            update(graph: content.difference(with: oldValue), natives: &natives, cache: cache, parent: parent)
+            updateContent(oldValue: oldValue)
         }
     }
-    let cache = NativeViewCache()
-    lazy var natives = lazy(type: [NativeViewProtocol].self) {
-        var natives = [NativeViewProtocol]()
-        update(graph: self.content.difference(with: nil), natives: &natives, cache: cache, parent: parent)
-        return natives
-    }
-    lazy var stackView = lazy(type: UIStackView.self) {
-        let stackView = UIStackView()
-        stackView.axis = Config.axis.nativeLayoutConstraint
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        return stackView
-    }
-    var parent: UIViewController!
+    let cache: NativeViewCache = NativeViewCache()
+    var needsToUpdateContent: Bool = false
 
     init(config: Config.Type, content: Content) {
         self.content = content
-        setup(content: content) { self.content.properties.update() }
+        super.init(frame: .zero)
+        axis = Config.axis.nativeLayoutConstraint
+        translatesAutoresizingMaskIntoConstraints = false
+        listenProperties()
     }
 
-    @inline(__always)
-    func mount(to target: Mountable, at index: Int, parent: UIViewController) {
-        self.parent = parent
-        natives.enumerated().forEach { (index, target) in
-            target.mount(to: self, at: index, parent: parent)
-        }
-        target.mount(view: stackView, at: index)
+    @available(*, unavailable)
+    required init(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 
-    @inline(__always)
-    func unmount(from target: Mountable) {
-        target.unmount(view: stackView)
-        natives.reversed().forEach { $0.unmount(from: self) }
+    override func layoutSubviews() {
+        updateContentIfNeed()
+        super.layoutSubviews()
     }
 
     func mount(view: UIView, at index: Int) {
-        stackView.insertArrangedSubview(view, at: index)
+        insertArrangedSubview(view, at: index)
     }
 
     func mount(viewController: UIViewController, at index: Int, parent: UIViewController) {
-        stackView.insertArrangedViewController(viewController, at: index, parentViewController: parent)
+        insertArrangedViewController(viewController, at: index, parentViewController: parent)
     }
 
     func unmount(view: UIView) {
-        stackView.removeArrangedSubview(view)
+        removeArrangedSubview(view)
         view.removeFromSuperview()
     }
 
     func unmount(viewController: UIViewController) {
-        stackView.removeArrangedViewController(viewController)
+        removeArrangedViewController(viewController)
+    }
+
+    func update(updation: Update) {
+        updation.update(.view(self))
     }
 }
 

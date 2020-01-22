@@ -25,15 +25,28 @@ fileprivate extension RepresentableBase {
     }
 }
 
-class NativeTableViewCell<Content: RepresentableBase>: UITableViewCell, Mountable {
-    weak var parentViewController: _NativeList!
-    var contentViewControllers: [UIViewController] = []
-    var component: Content! {
+class NativeTableViewCell<Content: RepresentableBase>: UITableViewCell, MountableRenderer {
+    var cache: NativeViewCache {
+        (targetParent as! _NativeList).cache
+    }
+    lazy var natives = createNatives()
+    var targetParent: UIViewController?
+    var oldContent: Content?
+    var _content: Content! {
         didSet {
-            update(graph: self.component.difference(with: oldValue), natives: &natives, cache: parentViewController!.cache, parent: parentViewController)
+            if oldValue != nil {
+                updateContent(oldValue: oldValue)
+            }
         }
     }
-    var natives = [NativeViewProtocol]()
+    var content: Content {
+        get { _content }
+        set { _content = newValue }
+    }
+
+    var needsToUpdateContent: Bool = false
+
+    var contentViewControllers: [UIViewController] = []
     lazy var stackView = lazy(type: UIStackView.self) {
         let stackView = UIStackView()
         stackView.axis = .horizontal
@@ -56,9 +69,9 @@ class NativeTableViewCell<Content: RepresentableBase>: UITableViewCell, Mountabl
     override func willMove(toSuperview newSuperview: UIView?) {
         contentViewControllers.forEach { content in
             if newSuperview == nil {
-                content.willMove(toParent: parentViewController)
+                content.willMove(toParent: targetParent)
             } else {
-                parentViewController?.addChild(content)
+                targetParent?.addChild(content)
             }
         }
     }
@@ -68,7 +81,7 @@ class NativeTableViewCell<Content: RepresentableBase>: UITableViewCell, Mountabl
             if superview == nil {
                 content.removeFromParent()
             } else {
-                content.didMove(toParent: parentViewController)
+                content.didMove(toParent: targetParent)
             }
         }
     }
@@ -77,9 +90,16 @@ class NativeTableViewCell<Content: RepresentableBase>: UITableViewCell, Mountabl
         super.prepareForReuse()
     }
 
+    override func layoutIfNeeded() {
+        updateContentIfNeed()
+        super.layoutIfNeeded()
+    }
+
     func update(content: Content, parent: _NativeList) {
-        parentViewController = parent
-        component = content
+        self.content = content
+        self.targetParent = parent
+        _ = natives
+        listenProperties()
     }
 
     func mount(view: UIView, at index: Int) {
@@ -103,32 +123,72 @@ class NativeTableViewCell<Content: RepresentableBase>: UITableViewCell, Mountabl
 }
 
 class _NativeList: UITableViewController {
-    var components: [RepresentableBase] = []
-    var cache = NativeViewCache()
+    let cache = NativeViewCache()
     var registedIdentifiers = Set<String>()
+}
 
-    func update(difference: Differences) {
-        difference.listen { differences in
-            tableView.reloadData {
-                differences.forEach { difference in
-                    switch difference.change {
-                    case .remove:
-                        components.remove(at: difference.index)
-                        tableView.deleteRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
-                    case .insert:
-                        type(of: difference.component).registerCellIfNeeded(to: self)
-                        components.insert(difference.component, at: difference.index)
-                        tableView.insertRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
-                    case .update:
-                        type(of: difference.component).registerCellIfNeeded(to: self)
-                        components[difference.index] = difference.component
-                        tableView.reloadRows(at: [IndexPath(row: difference.index, section: 0)], with: .automatic)
-                    case .stable:
-                        break
-                    }
-                }
-            }
+final class NativeList<Content: ComponentBase>: _NativeList, NativeViewProtocol, ReusableRenderer {
+    var components: [RepresentableBase] = []
+
+    func reload(_ f: () -> ()) {
+        tableView.reloadData(f)
+    }
+
+    func delete(component: RepresentableBase, index: Int) {
+        tableView.deleteRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
+    }
+
+    func insert(component: RepresentableBase, index: Int) {
+        type(of: component).registerCellIfNeeded(to: self)
+        tableView.insertRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
+    }
+
+    func update(component: RepresentableBase, index: Int) {
+        type(of: component).registerCellIfNeeded(to: self)
+        tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
+    }
+
+    var oldContent: Content?
+
+    var content: Content {
+        didSet {
+            updateContent(oldValue: oldValue)
         }
+    }
+
+    var needsToUpdateContent: Bool = false
+
+
+    init(content: Content) {
+        self.content = content
+        super.init(style: .plain)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.beginUpdates()
+        update(differences: content.difference(with: nil))
+        tableView.endUpdates()
+        listenProperties()
+    }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        updateContentIfNeed()
+    }
+
+    func mount(to target: Mountable, at index: Int, parent: UIViewController) {
+        target.mount(viewController: self, at: index, parent: parent)
+    }
+
+    func unmount(from target: Mountable) {
+        target.unmount(viewController: self)
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
@@ -142,39 +202,9 @@ class _NativeList: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         components[indexPath.row].dequeueCell(from: self, indexPath: indexPath)
     }
-}
 
-final class NativeList<Content: ComponentBase>: _NativeList, NativeViewProtocol {
-    var content: Content {
-        didSet {
-            update(difference: content.difference(with: oldValue))
-        }
-    }
-
-    init(content: Content) {
-        self.content = content
-        super.init(style: .plain)
-        setup(content: content) { self.content.properties.update() }
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        tableView.beginUpdates()
-        update(difference: content.difference(with: nil))
-        tableView.endUpdates()
-    }
-
-    func mount(to target: Mountable, at index: Int, parent: UIViewController) {
-        target.mount(viewController: self, at: index, parent: parent)
-    }
-
-    func unmount(from target: Mountable) {
-        target.unmount(viewController: self)
+    func update(updation: Update) {
+        updation.update(.viewController(self))
     }
 }
 

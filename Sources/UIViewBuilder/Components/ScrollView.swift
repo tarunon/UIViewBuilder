@@ -7,33 +7,24 @@
 
 import UIKit
 
-final class NativeScrollView<Content: ComponentBase>: NativeViewProtocol, Mountable {
+final class NativeScrollView<Content: ComponentBase>: UIScrollView, NativeViewProtocol, MountableRenderer {
+    let cache = NativeViewCache()
+    lazy var natives = createNatives()
+    var targetParent: UIViewController?
+    var oldContent: Content?
+    var content: Content {
+        didSet {
+            updateContent(oldValue: oldValue)
+        }
+    }
+    var needsToUpdateContent: Bool = false
     var axes: Axis.Set {
         didSet {
             if oldValue != self.axes {
-                deactivateConstraints()
-                activateConstraints()
+                setNeedsUpdateConstraints()
             }
         }
     }
-    var content: Content{
-        didSet {
-            update(graph: content.difference(with: oldValue), natives: &natives, cache: cache, parent: parent)
-        }
-    }
-
-    let cache = NativeViewCache()
-    lazy var natives = lazy(type: [NativeViewProtocol].self) {
-        var natives = [NativeViewProtocol]()
-        update(graph: self.content.difference(with: nil), natives: &natives, cache: cache, parent: parent)
-        return natives
-    }
-    lazy var scrollView = lazy(type: UIScrollView.self) {
-        let scrollView = UIScrollView()
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        return scrollView
-    }
-    var parent: UIViewController!
 
     var widthConstraints = [NSLayoutConstraint]()
     var heightConstraints = [NSLayoutConstraint]()
@@ -41,7 +32,14 @@ final class NativeScrollView<Content: ComponentBase>: NativeViewProtocol, Mounta
     init(axes: Axis.Set, content: Content) {
         self.axes = axes
         self.content = content
-        setup(content: content) { self.content.properties.update() }
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
+        listenProperties()
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 
     @inline(__always)
@@ -51,17 +49,28 @@ final class NativeScrollView<Content: ComponentBase>: NativeViewProtocol, Mounta
         heightConstraints = []
     }
 
+    override func layoutSubviews() {
+        updateContentIfNeed()
+        super.layoutSubviews()
+    }
+
+    override func updateConstraints() {
+        deactivateConstraints()
+        activateConstraints()
+        super.updateConstraints()
+    }
+
     @inline(__always)
     func activateConstraints() {
         if #available(iOS 11, *) {
             if !axes.contains(.horizontal) {
                 widthConstraints = [
-                    scrollView.widthAnchor.constraint(equalTo: scrollView.contentLayoutGuide.widthAnchor)
+                    widthAnchor.constraint(equalTo: contentLayoutGuide.widthAnchor)
                 ]
             }
             if !axes.contains(.vertical) {
                 heightConstraints = [
-                    scrollView.heightAnchor.constraint(equalTo: scrollView.contentLayoutGuide.heightAnchor)
+                    heightAnchor.constraint(equalTo: contentLayoutGuide.heightAnchor)
                 ]
             }
         }
@@ -73,10 +82,10 @@ final class NativeScrollView<Content: ComponentBase>: NativeViewProtocol, Mounta
         if #available(iOS 11.0, *) {
             NSLayoutConstraint.activate(
                 [
-                    view.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
-                    view.leftAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leftAnchor),
-                    view.rightAnchor.constraint(equalTo: scrollView.contentLayoutGuide.rightAnchor),
-                    view.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor)
+                    view.topAnchor.constraint(equalTo: contentLayoutGuide.topAnchor),
+                    view.leftAnchor.constraint(equalTo: contentLayoutGuide.leftAnchor),
+                    view.rightAnchor.constraint(equalTo: contentLayoutGuide.rightAnchor),
+                    view.bottomAnchor.constraint(equalTo: contentLayoutGuide.bottomAnchor)
                 ]
             )
         } else {
@@ -85,43 +94,29 @@ final class NativeScrollView<Content: ComponentBase>: NativeViewProtocol, Mounta
     }
 
     @inline(__always)
-    func mount(to target: Mountable, at index: Int, parent: UIViewController) {
-        self.parent = parent
-        natives.enumerated().forEach { (index, target) in
-            target.mount(to: self, at: index, parent: parent)
-        }
-        target.mount(view: scrollView, at: index)
-        activateConstraints()
-    }
-
-    @inline(__always)
-    func unmount(from target: Mountable) {
-        deactivateConstraints()
-        target.unmount(view: scrollView)
-        natives.reversed().forEach { $0.unmount(from: self) }
-        natives = []
-    }
-
-    @inline(__always)
     func mount(viewController: UIViewController, at index: Int, parent: UIViewController) {
-        scrollView.insertViewController(viewController, at: index, parentViewController: parent)
+        insertViewController(viewController, at: index, parentViewController: parent)
         activateConstraints(with: viewController.view)
     }
 
     @inline(__always)
     func mount(view: UIView, at index: Int) {
-        scrollView.insertSubview(view, at: index)
+        insertSubview(view, at: index)
         activateConstraints(with: view)
     }
 
     @inline(__always)
     func unmount(viewController: UIViewController) {
-        scrollView.removeViewController(viewController)
+        removeViewController(viewController)
     }
 
     @inline(__always)
     func unmount(view: UIView) {
         view.removeFromSuperview()
+    }
+
+    func update(updation: Update) {
+        updation.update(.view(self))
     }
 }
 

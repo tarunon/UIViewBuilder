@@ -84,16 +84,16 @@ public protocol UIViewRepresentable: RepresentableBase, ComponentBase {
 }
 
 public extension UIViewRepresentable {
-    internal typealias Native = NativeViewWrapper<View, Self>
+    internal typealias Native = NativeViewWrapper<Self>
 
     @inline(__always)
     func _create() -> Any {
-        Native(view: create(), content: self)
+        Native(content: self)
     }
 
     @inline(__always)
     func _update(native: Any) {
-        update(native: (native as! Native).view)
+        (native as! Native).content = self
     }
 }
 
@@ -104,15 +104,86 @@ public protocol UIViewControllerRepresentable: RepresentableBase, ComponentBase 
 }
 
 extension UIViewControllerRepresentable {
-    internal typealias Native = NativeViewControllerWrapper<ViewController, Self>
+    internal typealias Native = NativeViewControllerWrapper<Self>
 
     @inline(__always)
     func _create() -> Any {
-        Native(viewController: create(), content: self)
+        Native(content: self)
     }
 
     @inline(__always)
     func _update(native: Any) {
-        update(native: (native as! Native).viewController)
+        (native as! Native).content = self
+    }
+}
+
+class NativeViewWrapper<Content: UIViewRepresentable>: NativeViewRenderer {
+    var oldContent: Content?
+    var content: Content {
+        didSet {
+            updateContent(oldValue: oldValue)
+        }
+    }
+    var needsToUpdateContent: Bool = false
+
+    lazy var view: Content.View = content.create()
+
+    init(content: Content) {
+        self.content = content
+    }
+
+    func mount(to target: Mountable, at index: Int, parent: UIViewController) {
+        target.mount(view: view, at: index)
+    }
+
+    func unmount(from target: Mountable) {
+        target.unmount(view: view)
+    }
+
+    func update() {
+        content.update(native: view)
+    }
+
+    func setNeedsLayout() {
+        updateContentIfNeed()
+    }
+
+    func update(updation: Update) {
+        updation.update(.view(view))
+    }
+}
+
+class NativeViewControllerWrapper<Content: UIViewControllerRepresentable>: NativeViewRenderer {
+    var oldContent: Content?
+    var content: Content {
+        didSet {
+            updateContent(oldValue: oldValue)
+        }
+    }
+    var needsToUpdateContent: Bool = false
+
+    lazy var viewController: Content.ViewController = content.create()
+
+    init(content: Content) {
+        self.content = content
+    }
+
+    func mount(to target: Mountable, at index: Int, parent: UIViewController) {
+        target.mount(viewController: viewController, at: index, parent: parent)
+    }
+
+    func unmount(from target: Mountable) {
+        target.unmount(viewController: viewController)
+    }
+
+    func update() {
+        content.update(native: viewController)
+    }
+
+    func setNeedsLayout() {
+        updateContentIfNeed()
+    }
+    func update(updation: Update) {
+        updation.update(.viewController(viewController))
     }
 }

@@ -23,85 +23,73 @@ public extension ComponentModifier {
     typealias Content = AnyComponent
     func asAnyComponentModifier() -> AnyComponentModifier {
         AnyComponentModifier(
-            applyToView: { _ in },
-            applyToViewController: { _ in },
+            modify: { $0 },
             bodyFunc: body,
             modifier: self
         )
     }
 }
 
-protocol _ComponentModifier {
-    func _apply(to view: UIView)
-    func _apply(to viewController: UIViewController)
-}
-
-extension _ComponentModifier where Self: ComponentModifier {
-    func asAnyComponentModifier() -> AnyComponentModifier {
-        AnyComponentModifier(modifier: self)
+extension ComponentModifier {
+    func modify(_ originalUpdate: Update) -> Update {
+        asAnyComponentModifier()._modify(originalUpdate)
     }
 }
 
-class NativeModifiedContent<Content: RepresentableBase, Modifier: ComponentModifier>: NativeViewProtocol, Mountable {
-    var needsToUpdateContent: Bool = false
-    var body: Modifier.Body {
-        didSet {
-            update(graph: body.difference(with: oldValue), natives: &natives, cache: nil, parent: viewController)
-        }
-    }
-
-    var modifier: Modifier {
-        didSet {
-            if modifier.isEqual(to: oldValue) { return }
-            natives.forEach { $0.unmount(from: self) }
-            natives.enumerated().forEach { $0.element.mount(to: self, at: $0.offset, parent: viewController) }
-        }
-    }
-
-    lazy var natives = lazy(type: [NativeViewProtocol].self) {
-        var natives = [NativeViewProtocol]()
-        update(graph: body.difference(with: nil), natives: &natives, cache: nil, parent: self.viewController)
-        return natives
-    }
-    weak var viewController: UIViewController!
-    weak var target: Mountable!
-    var index: Int!
-
-    init(content: Content, modifier: Modifier) {
-        self.body = modifier.body(content: content.asAnyComponent())
-        self.modifier = modifier
-        setup(content: body) { self.body.properties.update() }
-    }
+class NativeModifiedContent<Content: RepresentableBase, Modifier: ComponentModifier>: NativeViewRenderer {
 
     func mount(to target: Mountable, at index: Int, parent: UIViewController) {
-        self.target = target
-        self.viewController = parent
-        self.index = index
-        natives.enumerated().forEach { $0.element.mount(to: self, at: $0.offset, parent: parent) }
+        native.mount(to: target, at: index, parent: parent)
     }
 
     func unmount(from target: Mountable) {
-        natives.forEach { $0.unmount(from: self) }
-    }
-    
-    func mount(viewController: UIViewController, at index: Int, parent: UIViewController) {
-        modifier.asAnyComponentModifier()._apply(to: viewController)
-        modifier.asAnyComponentModifier()._apply(to: viewController.view)
-        target.mount(viewController: viewController, at: self.index + index, parent: parent)
+        native.unmount(from: target)
     }
 
-    func mount(view: UIView, at index: Int) {
-        modifier.asAnyComponentModifier()._apply(to: viewController)
-        modifier.asAnyComponentModifier()._apply(to: view)
-        target.mount(view: view, at: self.index + index)
+    func update() {
+        native.update(updation: modifier.modify(Update {
+            self.body.difference(with: self.oldBody).differences[0].component.update(native: self.native)
+        }))
     }
 
-    func unmount(viewController: UIViewController) {
-        target.unmount(viewController: viewController)
+    lazy var native = lazy(type: NativeViewProtocol.self) {
+        let native = self.body.difference(with: nil).differences[0].component.create()
+        native.update(updation: modifier.modify(Update{}))
+        return native
     }
 
-    func unmount(view: UIView) {
-        target.unmount(view: view)
+    var oldBody: Modifier.Body? {
+        (oldContent?.asAnyComponent()).map(modifier.body(content:))
+    }
+
+    var body: Modifier.Body {
+        modifier.body(content: content.asAnyComponent())
+    }
+
+    var oldContent: Content?
+    var content: Content
+
+    var modifier: Modifier {
+        didSet {
+            if !modifier.isEqual(to: oldValue) {
+                update()
+            }
+        }
+    }
+
+    var needsToUpdateContent: Bool = false
+
+    init(content: Content, modifier: Modifier) {
+        self.content = content
+        self.modifier = modifier
+    }
+
+    func setNeedsLayout() {
+        self.updateContentIfNeed()
+    }
+
+    func update(updation: Update) {
+        native.update(updation: updation)
     }
 }
 
@@ -116,7 +104,7 @@ struct _ModifiedContent<Content: RepresentableBase, Modifier: ComponentModifier>
     }
 
     func update(native: NativeModifiedContent<Content, Modifier>) {
-        native.body = modifier.body(content: content.asAnyComponent())
+        native.content = content
         native.modifier = modifier
     }
 }

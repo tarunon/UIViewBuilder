@@ -82,7 +82,7 @@ struct Button: Component {
 class ExampleViewController: UIViewController {
     var emoji: [String] {
         didSet {
-            contentController.component.emoji = emoji
+            contentController.component.emoji = Array(emoji[0..<Int.random(in: 0..<emoji.count)])
         }
     }
     lazy var stackView = UIStackView()
