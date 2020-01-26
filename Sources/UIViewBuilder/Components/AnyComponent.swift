@@ -9,23 +9,11 @@ import UIKit
 
 public struct AnyComponent: ComponentBase {
     class Base {
-        func _create() -> NativeViewProtocol {
-            fatalError()
-        }
-
         func _difference(with oldValue: AnyComponent.Base?) -> Differences {
             fatalError()
         }
 
-        func _update(native: NativeViewProtocol) {
-            fatalError()
-        }
-
         func _destroy() -> Differences {
-            fatalError()
-        }
-
-        func _updateProperties() {
             fatalError()
         }
 
@@ -66,16 +54,6 @@ public struct AnyComponent: ComponentBase {
 
     final class RepresentableBox<Content: RepresentableBase & ComponentBase>: Box<Content> {
         @inline(__always)
-        override func _create() -> NativeViewProtocol {
-            content.create()
-        }
-
-        @inline(__always)
-        override func _update(native: NativeViewProtocol) {
-            content._update(native: native)
-        }
-
-        @inline(__always)
         override func _difference(with oldValue: AnyComponent.Base?) -> Differences {
             if let oldValue = oldValue?.as(Content.self) {
                 if !content.isEqual(to: oldValue) {
@@ -97,33 +75,17 @@ public struct AnyComponent: ComponentBase {
         }
     }
 
-    typealias Create<T> = () -> T
     typealias Difference<Component> = (Component?) -> Differences
-    typealias Update<T> = (T) -> ()
     typealias Destroy = () -> Differences
 
-    final class ClosureBox<Content: ComponentBase, Native>: Box<Content> {
-        var create: Create<Native>
+    final class ClosureBox<Content: ComponentBase>: Box<Content> {
         var difference: Difference<Base>
-        var update: Update<Native>
         var destroy: Destroy
 
-        init(create: @escaping Create<Native>, difference: @escaping Difference<Content>, update: @escaping Update<Native>, destroy: @escaping Destroy, content: Content) {
-            self.create = create
+        init(difference: @escaping Difference<Content>, destroy: @escaping Destroy, content: Content) {
             self.difference = { difference($0?.as(Content.self)) }
-            self.update = update
             self.destroy = destroy
             super.init(content: content)
-        }
-
-        @inline(__always)
-        override func _create() -> NativeViewProtocol {
-            create() as! NativeViewProtocol
-        }
-
-        @inline(__always)
-        override func _update(native: NativeViewProtocol) {
-            update(native as! Native)
         }
 
         @inline(__always)
@@ -157,18 +119,8 @@ public struct AnyComponent: ComponentBase {
         self.box = RepresentableBox(content: content)
     }
 
-    init<Content: ComponentBase, Native>(create: @escaping Create<Native>, difference: @escaping Difference<Content>, update: @escaping Update<Native>, destroy: @escaping Destroy, content: Content) {
-        self.box = ClosureBox(create: create, difference: difference, update: update, destroy: destroy, content: content)
-    }
-
-    @inline(__always)
-    func _create() -> NativeViewProtocol {
-        box._create()
-    }
-
-    @inline(__always)
-    func _update(native: NativeViewProtocol) {
-        box._update(native: native)
+    init<Content: ComponentBase>(difference: @escaping Difference<Content>, destroy: @escaping Destroy, content: Content) {
+        self.box = ClosureBox(difference: difference, destroy: destroy, content: content)
     }
 
     @inline(__always)
@@ -184,9 +136,7 @@ public struct AnyComponent: ComponentBase {
     @inline(__always)
     public func asAnyComponent() -> AnyComponent {
         AnyComponent(
-            create: self._create,
             difference: self._difference(with:),
-            update: self._update(native:),
             destroy: self._destroy,
             content: self
         )

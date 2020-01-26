@@ -26,18 +26,6 @@ extension _Component {
     func destroy() -> Differences {
         asAnyComponent()._destroy()
     }
-
-    @inline(__always)
-    var modify: AnyComponent {
-        _read {
-            yield asAnyComponent()
-        }
-        _modify {
-            var tmp = asAnyComponent()
-            yield &tmp
-            self = tmp.box.as(Self.self)!
-        }
-    }
 }
 
 protocol NodeComponent: ComponentBase {
@@ -60,16 +48,16 @@ extension Component {
     public func asAnyComponent() -> AnyComponent {
         let erased = body.asAnyComponent()
         return AnyComponent(
-            create: erased._create,
             difference: { oldValue in
                 erased._difference(with: oldValue?.body.asAnyComponent())
             },
-            update: erased._update(native:),
             destroy: erased._destroy,
             content: self
         )
     }
+}
 
+extension Component where Properties == ComponentSet.Empty {
     public var properties: ComponentSet.Empty {
         get { .init() }
         set {}

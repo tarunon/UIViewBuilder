@@ -8,7 +8,7 @@
 import UIKit
 
 protocol Renderer: class {
-    associatedtype Content: _Component
+    associatedtype Content
     var oldContent: Content? { get set }
     var content: Content { get set }
     var needsToUpdateContent: Bool { get set }
@@ -16,9 +16,9 @@ protocol Renderer: class {
     func update(differences: Differences)
 }
 
-extension Renderer {
+extension Renderer where Content: ComponentBase {
     func listenProperties() {
-        content.modify.properties.handleUpdate { [weak self] in
+        content.properties.handleUpdate { [weak self] in
             self?.needsToUpdateContent = true
             self?.setNeedsLayout()
         }
@@ -33,7 +33,7 @@ extension Renderer {
 
     func updateContentIfNeed() {
         if needsToUpdateContent || oldContent != nil {
-            content.modify.properties.update()
+            content.properties.update()
             let oldContent = self.oldContent
             self.oldContent = nil
             needsToUpdateContent = false
@@ -49,7 +49,7 @@ extension Renderer where Self: UIViewController {
     }
 }
 
-protocol NativeViewRenderer: Renderer, NativeViewProtocol where Content: RepresentableBase {
+protocol NativeViewRenderer: Renderer, NativeViewProtocol {
     func update()
 }
 
@@ -69,7 +69,7 @@ protocol MountableRenderer: Renderer, Mountable {
     var targetParent: UIViewController? { get set }
 }
 
-extension MountableRenderer {
+extension MountableRenderer where Content: ComponentBase {
     func createNatives() -> [NativeViewProtocol] {
         var natives = [NativeViewProtocol]()
         update(differences: content.difference(with: nil), natives: &natives)

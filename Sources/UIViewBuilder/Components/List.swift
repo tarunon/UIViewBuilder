@@ -25,21 +25,21 @@ fileprivate extension RepresentableBase {
     }
 }
 
-class NativeTableViewCell<Content: RepresentableBase>: UITableViewCell, MountableRenderer {
+class NativeTableViewCell<Component: RepresentableBase>: UITableViewCell, MountableRenderer {
     var cache: NativeViewCache {
         (targetParent as! _NativeList).cache
     }
     lazy var natives = createNatives()
     var targetParent: UIViewController?
-    var oldContent: Content?
-    var _content: Content! {
+    var oldContent: AnyComponent?
+    var _content: AnyComponent! {
         didSet {
             if oldValue != nil {
                 updateContent(oldValue: oldValue)
             }
         }
     }
-    var content: Content {
+    var content: AnyComponent {
         get { _content }
         set { _content = newValue }
     }
@@ -95,8 +95,8 @@ class NativeTableViewCell<Content: RepresentableBase>: UITableViewCell, Mountabl
         super.layoutIfNeeded()
     }
 
-    func update(content: Content, parent: _NativeList) {
-        self.content = content
+    func update(content: Component, parent: _NativeList) {
+        self.content = content.asAnyComponent()
         self.targetParent = parent
         _ = natives
         listenProperties()

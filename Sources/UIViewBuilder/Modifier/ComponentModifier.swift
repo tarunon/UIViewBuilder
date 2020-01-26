@@ -36,7 +36,7 @@ extension ComponentModifier {
     }
 }
 
-class NativeModifiedContent<Content: RepresentableBase, Modifier: ComponentModifier>: NativeViewRenderer {
+class NativeModifiedContent<Component: RepresentableBase, Modifier: ComponentModifier>: NativeViewRenderer {
 
     func mount(to target: Mountable, at index: Int, parent: UIViewController) {
         native.mount(to: target, at: index, parent: parent)
@@ -47,41 +47,31 @@ class NativeModifiedContent<Content: RepresentableBase, Modifier: ComponentModif
     }
 
     func update() {
-        native.update(updation: modifier.modify(Update {
-            self.body.difference(with: self.oldBody).differences[0].component.update(native: self.native)
+        native.update(updation: source.modifier.modify(Update {
+            self.content.difference(with: self.oldContent).differences[0].component.update(native: self.native)
         }))
     }
 
     lazy var native = lazy(type: NativeViewProtocol.self) {
-        let native = self.body.difference(with: nil).differences[0].component.create()
-        native.update(updation: modifier.modify(Update{}))
+        let native = self.content.difference(with: self.oldContent).differences[0].component.create()
+        native.update(updation: source.modifier.modify(Update{}))
         return native
     }
 
-    var oldBody: Modifier.Body? {
-        (oldContent?.asAnyComponent()).map(modifier.body(content:))
-    }
+    var oldContent: Modifier.Body?
+    var content: Modifier.Body
 
-    var body: Modifier.Body {
-        modifier.body(content: content.asAnyComponent())
-    }
-
-    var oldContent: Content?
-    var content: Content
-
-    var modifier: Modifier {
+    var source: (content: Component, modifier: Modifier) {
         didSet {
-            if !modifier.isEqual(to: oldValue) {
-                update()
-            }
+            self.content = source.modifier.body(content: source.content.asAnyComponent())
         }
     }
 
     var needsToUpdateContent: Bool = false
 
-    init(content: Content, modifier: Modifier) {
-        self.content = content
-        self.modifier = modifier
+    init(content: Component, modifier: Modifier) {
+        self.source = (content, modifier)
+        self.content = source.modifier.body(content: source.content.asAnyComponent())
     }
 
     func setNeedsLayout() {
@@ -104,8 +94,7 @@ struct _ModifiedContent<Content: RepresentableBase, Modifier: ComponentModifier>
     }
 
     func update(native: NativeModifiedContent<Content, Modifier>) {
-        native.content = content
-        native.modifier = modifier
+        native.source = (content, modifier)
     }
 }
 
